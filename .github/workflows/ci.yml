@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      cache:
+        description: "Use build caches. Uncheck for a clean cold build."
+        type: boolean
+        default: true
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -26,13 +31,16 @@ jobs:
 
     env:
       VCPKG_ROOT: ${{ github.workspace }}/vcpkg
-      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+      USE_CACHE: ${{ github.event_name != 'workflow_dispatch' || inputs.cache }}
+      VCPKG_BINARY_SOURCES: "${{ (github.event_name != 'workflow_dispatch' || inputs.cache) && 'clear;x-gha,readwrite' || 'clear' }}"
+      SCCACHE_GHA_ENABLED: "true"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Export GitHub Actions cache environment
+        if: env.USE_CACHE == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -43,7 +51,20 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y ninja-build
 
+      - name: Setup sccache (Linux)
+        if: runner.os == 'Linux' && env.USE_CACHE == 'true'
+        uses: mozilla-actions/sccache-action@v0.0.6
+
+      - name: Restore vcpkg (clone + bootstrap)
+        id: restore-vcpkg
+        if: env.USE_CACHE == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.VCPKG_ROOT }}
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
+
       - name: Bootstrap vcpkg
+        if: steps.restore-vcpkg.outputs.cache-hit != 'true'
         shell: bash
         run: |
           baseline=$(node -e "process.stdout.write(require('./vcpkg.json')['builtin-baseline'])")
@@ -55,11 +76,28 @@ jobs:
             "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
           fi
 
+      - name: Save vcpkg (bootstrap only)
+        if: env.USE_CACHE == 'true' && steps.restore-vcpkg.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.VCPKG_ROOT }}
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
+
       - name: Configure
-        run: cmake --preset ${{ matrix.preset }}
+        shell: bash
+        run: |
+          EXTRA=""
+          if [ "$RUNNER_OS" = "Linux" ] && [ "$USE_CACHE" = "true" ]; then
+            EXTRA="-DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
+          fi
+          cmake --preset ${{ matrix.preset }} $EXTRA
 
       - name: Build
         run: cmake --build --preset ${{ matrix.preset }}
 
       - name: Test
         run: ctest --preset ${{ matrix.preset }}
+
+      - name: sccache stats (Linux)
+        if: runner.os == 'Linux' && env.USE_CACHE == 'true'
+        run: sccache --show-stats
