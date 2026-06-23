@@ -33,7 +33,8 @@ jobs:
       VCPKG_ROOT: ${{ github.workspace }}/vcpkg
       USE_CACHE: ${{ github.event_name != 'workflow_dispatch' || inputs.cache }}
       VCPKG_BINARY_SOURCES: "${{ (github.event_name != 'workflow_dispatch' || inputs.cache) && 'clear;x-gha,readwrite' || 'clear' }}"
-      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GHA_ENABLED: "false"
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
 
     steps:
       - name: Checkout
@@ -51,9 +52,18 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y ninja-build
 
-      - name: Setup sccache (Linux)
+      - name: Install sccache (Linux)
         if: runner.os == 'Linux' && env.USE_CACHE == 'true'
         uses: mozilla-actions/sccache-action@v0.0.6
+
+      - name: Cache sccache objects (Linux)
+        if: runner.os == 'Linux' && env.USE_CACHE == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ runner.os }}-sccache-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-sccache-
 
       - name: Restore vcpkg (clone + bootstrap)
         id: restore-vcpkg
