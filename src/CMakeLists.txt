@@ -7,4 +7,4 @@ target_include_directories(agents_framework
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 )
 
-target_compile_features(agents_framework PUBLIC cxx_std_20)
+target_compile_features(agents_framework PUBLIC cxx_std_23)
