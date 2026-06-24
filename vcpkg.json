@@ -4,6 +4,8 @@
   "description": "Fine-Tuning AI Agent Framework",
   "builtin-baseline": "297a609f7499dc0ffcabef9029c0565b6646d192",
   "dependencies": [
-    "catch2"
+    "catch2",
+    "nlohmann-json",
+    "spdlog"
   ]
 }
