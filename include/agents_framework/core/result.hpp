@@ -71,3 +71,21 @@ using Result = std::expected<T, Error>;
 }
 
 }
+
+#define AF_DETAIL_CONCAT_(a, b) a##b
+#define AF_DETAIL_CONCAT(a, b) AF_DETAIL_CONCAT_(a, b)
+
+#define AF_TRY(decl, expr)                                          \
+  auto&& AF_DETAIL_CONCAT(af_try_, __LINE__) = (expr);              \
+  if (!AF_DETAIL_CONCAT(af_try_, __LINE__)) {                       \
+    return std::unexpected(                                         \
+        std::move(AF_DETAIL_CONCAT(af_try_, __LINE__)).error());    \
+  }                                                                 \
+  decl = *std::move(AF_DETAIL_CONCAT(af_try_, __LINE__))
+
+#define AF_TRY_VOID(expr)                                           \
+  if (auto&& AF_DETAIL_CONCAT(af_try_, __LINE__) = (expr);          \
+      !AF_DETAIL_CONCAT(af_try_, __LINE__)) {                       \
+    return std::unexpected(                                         \
+        std::move(AF_DETAIL_CONCAT(af_try_, __LINE__)).error());    \
+  }
