@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 
 namespace agents_framework::core {
@@ -38,5 +39,25 @@ enum class ErrorCode {
   }
   return "Unknown";
 }
+
+struct Error {
+  ErrorCode code{ErrorCode::Unknown};
+  std::string message;
+  std::string context;
+
+  [[nodiscard]] std::string to_string() const {
+    std::string out{error_code_name(code)};
+    if (!message.empty()) {
+      out += ": ";
+      out += message;
+    }
+    if (!context.empty()) {
+      out += " (";
+      out += context;
+      out += ')';
+    }
+    return out;
+  }
+};
 
 }
