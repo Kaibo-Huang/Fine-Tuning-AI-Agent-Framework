@@ -1,7 +1,9 @@
 #pragma once
 
+#include <expected>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace agents_framework::core {
 
@@ -59,5 +61,13 @@ struct Error {
     return out;
   }
 };
+
+template <class T>
+using Result = std::expected<T, Error>;
+
+[[nodiscard]] inline std::unexpected<Error> fail(ErrorCode code, std::string message,
+                                                 std::string context = {}) {
+  return std::unexpected(Error{code, std::move(message), std::move(context)});
+}
 
 }
