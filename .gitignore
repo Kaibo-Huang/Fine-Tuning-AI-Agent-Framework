@@ -68,3 +68,8 @@ vcpkg_installed/
 Testing/
 .cache/
 .vscode
+
+# secrets — never commit real keys. .env.example is the tracked template.
+.env
+.env.*
+!.env.example
