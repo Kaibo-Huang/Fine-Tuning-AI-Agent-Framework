@@ -3,6 +3,7 @@ find_package(Catch2 3 CONFIG REQUIRED)
 add_executable(agents_framework_tests
   test_version.cpp
   core/test_result.cpp
+  core/test_logging.cpp
 )
 
 target_link_libraries(agents_framework_tests
@@ -11,4 +12,5 @@ target_link_libraries(agents_framework_tests
     Catch2::Catch2WithMain
 )
 
-add_test(NAME agents_framework_tests COMMAND agents_framework_tests)
+include(Catch)
+catch_discover_tests(agents_framework_tests)
