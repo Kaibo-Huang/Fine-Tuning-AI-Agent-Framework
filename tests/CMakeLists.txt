@@ -4,6 +4,7 @@ add_executable(agents_framework_tests
   test_version.cpp
   core/test_result.cpp
   core/test_logging.cpp
+  core/test_config.cpp
 )
 
 target_link_libraries(agents_framework_tests
