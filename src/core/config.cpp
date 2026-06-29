@@ -1,9 +1,25 @@
 #include "agents_framework/core/config.hpp"
 
+#include <cctype>
+#include <cstdlib>
 #include <fstream>
+#include <optional>
 
 namespace agents_framework::core {
 namespace {
+
+std::optional<std::string> env_override(std::string_view key) {
+  std::string name{"AGENTS_"};
+  name.reserve(name.size() + key.size());
+  for (char c : key) {
+    name += (c == '.') ? '_'
+                       : static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+  }
+  if (const char* value = std::getenv(name.c_str())) {
+    return std::string{value};
+  }
+  return std::nullopt;
+}
 
 const nlohmann::json* find_key(const nlohmann::json& root, std::string_view key) {
   const nlohmann::json* node = &root;
@@ -25,6 +41,43 @@ const nlohmann::json* find_key(const nlohmann::json& root, std::string_view key)
     }
     pos = dot + 1;
   }
+}
+
+Result<std::int64_t> parse_int(const std::string& text, std::string_view key) {
+  try {
+    std::size_t consumed = 0;
+    const long long value = std::stoll(text, &consumed);
+    if (consumed == text.size()) {
+      return static_cast<std::int64_t>(value);
+    }
+  } catch (const std::exception&) {
+  }
+  return fail(ErrorCode::Config, "config value is not an integer", std::string{key});
+}
+
+Result<double> parse_double(const std::string& text, std::string_view key) {
+  try {
+    std::size_t consumed = 0;
+    const double value = std::stod(text, &consumed);
+    if (consumed == text.size()) {
+      return value;
+    }
+  } catch (const std::exception&) {
+  }
+  return fail(ErrorCode::Config, "config value is not a number", std::string{key});
+}
+
+Result<bool> parse_bool(std::string text, std::string_view key) {
+  for (char& c : text) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  if (text == "true" || text == "1" || text == "yes" || text == "on") {
+    return true;
+  }
+  if (text == "false" || text == "0" || text == "no" || text == "off") {
+    return false;
+  }
+  return fail(ErrorCode::Config, "config value is not a boolean", std::string{key});
 }
 
 }  // namespace
@@ -51,6 +104,9 @@ Result<Config> Config::from_json(nlohmann::json data) {
 }
 
 Result<std::string> Config::get_string(std::string_view key) const {
+  if (auto value = env_override(key)) {
+    return *value;
+  }
   const nlohmann::json* node = find_key(data_, key);
   if (!node) {
     return fail(ErrorCode::Config, "missing config key", std::string{key});
@@ -62,6 +118,9 @@ Result<std::string> Config::get_string(std::string_view key) const {
 }
 
 Result<std::int64_t> Config::get_int(std::string_view key) const {
+  if (auto value = env_override(key)) {
+    return parse_int(*value, key);
+  }
   const nlohmann::json* node = find_key(data_, key);
   if (!node) {
     return fail(ErrorCode::Config, "missing config key", std::string{key});
@@ -73,6 +132,9 @@ Result<std::int64_t> Config::get_int(std::string_view key) const {
 }
 
 Result<double> Config::get_double(std::string_view key) const {
+  if (auto value = env_override(key)) {
+    return parse_double(*value, key);
+  }
   const nlohmann::json* node = find_key(data_, key);
   if (!node) {
     return fail(ErrorCode::Config, "missing config key", std::string{key});
@@ -84,6 +146,9 @@ Result<double> Config::get_double(std::string_view key) const {
 }
 
 Result<bool> Config::get_bool(std::string_view key) const {
+  if (auto value = env_override(key)) {
+    return parse_bool(*value, key);
+  }
   const nlohmann::json* node = find_key(data_, key);
   if (!node) {
     return fail(ErrorCode::Config, "missing config key", std::string{key});
@@ -114,4 +179,4 @@ bool Config::get_bool_or(std::string_view key, bool fallback) const {
   return value ? *value : fallback;
 }
 
-}  // namespace agents_framework::core
+}  
