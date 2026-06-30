@@ -6,6 +6,7 @@ add_executable(agents_framework_tests
   core/test_logging.cpp
   core/test_config.cpp
   core/test_rng.cpp
+  core/test_clock.cpp
 )
 
 target_link_libraries(agents_framework_tests
