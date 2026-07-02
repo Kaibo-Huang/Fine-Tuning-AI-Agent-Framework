@@ -9,6 +9,7 @@ add_executable(agents_framework_tests
   core/test_clock.cpp
   core/test_id.cpp
   core/test_fixed_string.cpp
+  core/test_dotenv.cpp
   http/test_secrets.cpp
   http/test_http_client.cpp
   http/test_sse.cpp
