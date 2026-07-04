@@ -17,3 +17,4 @@ target_link_libraries(agents_framework
 )
 
 add_subdirectory(core)
+add_subdirectory(llm)
