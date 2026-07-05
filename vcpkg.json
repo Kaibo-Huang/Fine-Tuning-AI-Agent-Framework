@@ -5,6 +5,7 @@
   "builtin-baseline": "297a609f7499dc0ffcabef9029c0565b6646d192",
   "dependencies": [
     "catch2",
+    "curl",
     "nlohmann-json",
     "spdlog"
   ]
