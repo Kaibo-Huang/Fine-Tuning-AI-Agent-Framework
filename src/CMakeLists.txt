@@ -13,6 +13,7 @@ target_link_libraries(agents_framework
   PUBLIC
     nlohmann_json::nlohmann_json
   PRIVATE
+    CURL::libcurl
     spdlog::spdlog
 )
 
