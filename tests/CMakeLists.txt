@@ -8,6 +8,9 @@ add_executable(agents_framework_tests
   core/test_rng.cpp
   core/test_clock.cpp
   core/test_id.cpp
+  http/test_secrets.cpp
+  http/test_http_client.cpp
+  http/test_sse.cpp
   llm/test_canonical.cpp
   llm/test_mock_backend.cpp
 )
