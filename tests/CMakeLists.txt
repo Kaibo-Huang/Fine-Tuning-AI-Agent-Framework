@@ -13,6 +13,7 @@ add_executable(agents_framework_tests
   http/test_sse.cpp
   llm/test_canonical.cpp
   llm/test_mock_backend.cpp
+  llm/test_anthropic_backend.cpp
 )
 
 target_link_libraries(agents_framework_tests
