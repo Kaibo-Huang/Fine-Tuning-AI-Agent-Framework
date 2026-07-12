@@ -18,6 +18,7 @@ add_executable(agents_framework_tests
   llm/test_openai_backend.cpp
   graph/test_state.cpp
   graph/test_state_serde.cpp
+  graph/test_node.cpp
 )
 
 target_link_libraries(agents_framework_tests
