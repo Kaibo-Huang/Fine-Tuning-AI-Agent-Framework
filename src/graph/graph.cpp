@@ -1,6 +1,7 @@
 #include "agents_framework/graph/graph.hpp"
 
 #include <algorithm>
+#include <deque>
 
 namespace agents_framework::graph {
 
@@ -25,6 +26,26 @@ void GraphSpec::add_edge(std::string from, std::string to) {
 bool GraphSpec::has_node(std::string_view name) const noexcept {
   return std::any_of(nodes_.begin(), nodes_.end(),
                      [name](const NodeEntry& entry) { return entry.name == name; });
+}
+
+namespace {
+
+std::vector<bool> reachable_from(std::span<const std::size_t> roots,
+                                 const std::vector<std::vector<std::size_t>>& targets) {
+  std::vector<bool> seen(targets.size(), false);
+  std::deque<std::size_t> frontier(roots.begin(), roots.end());
+  while (!frontier.empty()) {
+    const std::size_t index = frontier.front();
+    frontier.pop_front();
+    if (seen[index]) continue;
+    seen[index] = true;
+    for (const std::size_t next : targets[index]) {
+      if (!seen[next]) frontier.push_back(next);
+    }
+  }
+  return seen;
+}
+
 }
 
 core::Result<CompiledGraph> GraphSpec::compile() && {
@@ -59,6 +80,7 @@ core::Result<CompiledGraph> GraphSpec::compile() && {
 
   std::vector<std::size_t> entry;
   std::vector<std::vector<std::size_t>> targets(nodes_.size());
+  std::vector<bool> exits(nodes_.size(), false);
 
   for (const Edge& edge : edges_) {
     if (edge.to == kStart) {
@@ -90,6 +112,8 @@ core::Result<CompiledGraph> GraphSpec::compile() && {
     }
     if (to) {
       targets[*from].push_back(*to);
+    } else {
+      exits[*from] = true;
     }
   }
 
@@ -103,6 +127,29 @@ core::Result<CompiledGraph> GraphSpec::compile() && {
   for (auto& list : targets) {
     std::sort(list.begin(), list.end());
     list.erase(std::unique(list.begin(), list.end()), list.end());
+  }
+
+  const std::vector<bool> reachable = reachable_from(entry, targets);
+  for (std::size_t i = 0; i < nodes_.size(); ++i) {
+    if (!reachable[i]) {
+      return core::fail(core::ErrorCode::Invalid, "node is unreachable from __start__", nodes_[i].name);
+    }
+    if (targets[i].empty() && !exits[i]) {
+      return core::fail(core::ErrorCode::Invalid, "node is a dead end; add an edge to __end__ or another node", nodes_[i].name);
+    }
+  }
+
+  std::vector<std::vector<std::size_t>> reversed(nodes_.size());
+  std::vector<std::size_t> exit_roots;
+  for (std::size_t i = 0; i < nodes_.size(); ++i) {
+    if (exits[i]) exit_roots.push_back(i);
+    for (const std::size_t next : targets[i]) reversed[next].push_back(i);
+  }
+  const std::vector<bool> terminates = reachable_from(exit_roots, reversed);
+  for (std::size_t i = 0; i < nodes_.size(); ++i) {
+    if (!terminates[i]) {
+      return core::fail(core::ErrorCode::Invalid, "node has no path to __end__", nodes_[i].name);
+    }
   }
 
   CompiledGraph compiled;
