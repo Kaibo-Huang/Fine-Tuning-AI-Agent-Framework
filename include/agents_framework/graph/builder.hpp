@@ -7,6 +7,7 @@
 #include <string_view>
 #include <utility>
 
+#include "agents_framework/core/result.hpp"
 #include "agents_framework/graph/graph.hpp"
 #include "agents_framework/graph/node.hpp"
 #include "agents_framework/graph/state.hpp"
@@ -40,6 +41,8 @@ class GraphBuilder {
   GraphBuilder& set_finish(std::string node) {
     return add_edge(std::move(node), std::string{kEnd});
   }
+
+  [[nodiscard]] core::Result<CompiledGraph> compile() && { return std::move(spec_).compile(); }
 
   [[nodiscard]] std::size_t node_count() const noexcept { return spec_.node_count(); }
   [[nodiscard]] bool has_node(std::string_view name) const noexcept {
