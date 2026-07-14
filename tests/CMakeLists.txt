@@ -20,6 +20,7 @@ add_executable(agents_framework_tests
   graph/test_state_serde.cpp
   graph/test_node.cpp
   graph/test_builder.cpp
+  graph/test_compile.cpp
 )
 
 target_link_libraries(agents_framework_tests
