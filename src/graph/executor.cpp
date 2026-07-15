@@ -54,6 +54,14 @@ core::Result<RunStats> Executor::run(CompiledGraph& graph, ChannelMap& state,
     for (const std::size_t index : active) {
       const auto targets = graph.static_targets(index);
       next.insert(next.end(), targets.begin(), targets.end());
+      if (graph.has_router(index)) {
+        auto routed = graph.route(index, state);
+        if (!routed) {
+          return std::unexpected(
+              annotate(std::move(routed).error(), graph.node_name(index), stats.steps));
+        }
+        next.insert(next.end(), routed->begin(), routed->end());
+      }
     }
     std::sort(next.begin(), next.end());
     next.erase(std::unique(next.begin(), next.end()), next.end());
