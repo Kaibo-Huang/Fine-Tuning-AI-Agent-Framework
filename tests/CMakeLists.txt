@@ -23,6 +23,7 @@ add_executable(agents_framework_tests
   graph/test_compile.cpp
   graph/test_executor.cpp
   graph/test_routing.cpp
+  graph/test_llm_node.cpp
 )
 
 target_link_libraries(agents_framework_tests
