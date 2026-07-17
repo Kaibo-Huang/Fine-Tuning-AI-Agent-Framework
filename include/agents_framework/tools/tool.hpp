@@ -23,6 +23,9 @@ class Tool {
   [[nodiscard]] std::string_view name() const { return def().name; }
 };
 
+[[nodiscard]] core::Result<void> validate_args(const nlohmann::json& schema,
+                                               const nlohmann::json& args);
+
 using ToolFn = std::function<core::Result<std::string>(const nlohmann::json&)>;
 
 class FnTool final : public Tool {
