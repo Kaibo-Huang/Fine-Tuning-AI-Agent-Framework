@@ -11,8 +11,8 @@
 #include "agents_framework/graph/llm_node.hpp"
 #include "agents_framework/graph/retrieval_node.hpp"
 #include "agents_framework/graph/subgraph_node.hpp"
-#include "agents_framework/http/secrets.hpp"
-#include "agents_framework/llm/anthropic_backend.hpp"
+#include "agents_framework/core/dotenv.hpp"
+#include "agents_framework/llm/backend_factory.hpp"
 #include "agents_framework/llm/mock_backend.hpp"
 #include "agents_framework/llm/mock_embedding.hpp"
 #include "agents_framework/store/checkpoint_store.hpp"
@@ -34,13 +34,8 @@ using SupervisorSchema = graph::Schema<Task, Query, Docs, Results>;
 using Messages = graph::Channel<"messages", std::vector<llm::Message>, graph::Append>;
 using AgentSchema = graph::Schema<Messages>;
 
-std::shared_ptr<llm::LLMBackend> make_backend(const std::string& role) {
-  if (auto key = http::SecretStore::from_env("ANTHROPIC_API_KEY")) {
-    return std::make_shared<llm::AnthropicBackend>(std::move(*key));
-  }
-  auto mock = std::make_shared<llm::MockBackend>();
-  mock->set_handler([role](const llm::ChatRequest& request)
-                        -> core::Result<llm::ChatResponse> {
+llm::MockBackend::Handler canned_for(const std::string& role) {
+  return [role](const llm::ChatRequest& request) -> core::Result<llm::ChatResponse> {
     std::string prompt;
     for (const auto& message : request.messages) {
       for (const auto& block : message.content) {
@@ -58,8 +53,17 @@ std::shared_ptr<llm::LLMBackend> make_backend(const std::string& role) {
       response.content.push_back(llm::TextBlock{"12 x 12 = 144."});
     }
     return response;
-  });
-  return mock;
+  };
+}
+
+std::shared_ptr<llm::LLMBackend> make_backend(const std::string& role) {
+  llm::BackendOptions options;
+  options.max_tokens = 512;
+  options.mock_handler = canned_for(role);
+
+  auto backend = llm::backend_from_env(std::move(options));
+  if (!backend) throw std::runtime_error(backend.error().to_string());
+  return std::move(*backend);
 }
 
 graph::CompiledGraph build_research_agent(std::shared_ptr<llm::EmbeddingBackend> embedder,
@@ -117,6 +121,17 @@ std::string last_assistant_text(const std::vector<llm::Message>& messages) {
 }
 
 int main() {
+  if (const auto env_file = agents_framework::core::load_dotenv()) {
+    std::cout << "[env] loaded " << env_file->applied.size() << " variable(s) from "
+              << env_file->path.string() << "\n";
+  }
+  if (const auto selection = agents_framework::llm::select_backend()) {
+    std::cout << "[backend] " << selection->describe() << "\n";
+  } else {
+    std::cerr << "[backend] " << selection.error().to_string() << "\n";
+    return 1;
+  }
+
   auto opened = store::Db::open_memory();
   if (!opened) {
     std::cerr << opened.error().to_string() << "\n";

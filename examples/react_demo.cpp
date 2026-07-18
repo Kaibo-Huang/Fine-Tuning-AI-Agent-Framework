@@ -8,13 +8,12 @@
 
 #include <nlohmann/json.hpp>
 
+#include "agents_framework/core/dotenv.hpp"
 #include "agents_framework/graph/builder.hpp"
 #include "agents_framework/graph/executor.hpp"
 #include "agents_framework/graph/llm_node.hpp"
 #include "agents_framework/graph/tool_node.hpp"
-#include "agents_framework/http/secrets.hpp"
-#include "agents_framework/llm/anthropic_backend.hpp"
-#include "agents_framework/llm/openai_backend.hpp"
+#include "agents_framework/llm/backend_factory.hpp"
 #include "agents_framework/tools/registry.hpp"
 
 namespace {
@@ -121,23 +120,57 @@ void run_agent(std::string_view label, std::shared_ptr<llm::LLMBackend> backend,
   std::cout << "(" << stats->steps << " super-steps, " << stats->node_runs << " node runs)\n\n";
 }
 
+llm::MockBackend::Handler canned_react() {
+  return [](const llm::ChatRequest& request) -> core::Result<llm::ChatResponse> {
+    bool has_tool_result = false;
+    std::string tool_output;
+    for (const auto& message : request.messages) {
+      for (const auto& block : message.content) {
+        if (const auto* result = std::get_if<llm::ToolResultBlock>(&block)) {
+          has_tool_result = true;
+          tool_output = result->content;
+        }
+      }
+    }
+
+    llm::ChatResponse response;
+    if (!has_tool_result) {
+      response.content.push_back(llm::ToolUseBlock{
+          "mock-call-1", "calculator",
+          nlohmann::json{{"op", "multiply"}, {"a", 987654321}, {"b", 123456789}}});
+      response.stop_reason = llm::StopReason::ToolUse;
+    } else {
+      response.content.push_back(llm::TextBlock{"The product is " + tool_output + "."});
+    }
+    return response;
+  };
+}
+
 }
 
 int main() {
   using namespace agents_framework;
-  const std::string question = "What is 987654321 times 123456789?";
-  bool ran = false;
 
-  if (auto key = http::SecretStore::from_env("ANTHROPIC_API_KEY")) {
-    run_agent("ReAct", std::make_shared<llm::AnthropicBackend>(std::move(*key)), question);
-    ran = true;
+  if (const auto env_file = core::load_dotenv()) {
+    std::cout << "[env] loaded " << env_file->applied.size() << " variable(s) from "
+              << env_file->path.string() << "\n";
   }
-  if (auto key = http::SecretStore::from_env("OPENAI_API_KEY")) {
-    run_agent("ReAct", std::make_shared<llm::OpenAiBackend>(std::move(*key)), question);
-    ran = true;
+
+  llm::BackendOptions options;
+  options.max_tokens = 512;
+  options.mock_handler = canned_react();
+
+  const auto selection = llm::select_backend(llm::system_env(), options);
+  if (!selection) {
+    std::cerr << "[backend] " << selection.error().to_string() << "\n";
+    return 1;
   }
-  if (!ran) {
-    std::cout << "Set ANTHROPIC_API_KEY and/or OPENAI_API_KEY to run this demo.\n";
+  auto backend = llm::make_backend(*selection, std::move(options), llm::system_env());
+  if (!backend) {
+    std::cerr << "[backend] " << backend.error().to_string() << "\n";
+    return 1;
   }
+
+  run_agent(selection->describe(), std::move(*backend), "What is 987654321 times 123456789?");
   return 0;
 }

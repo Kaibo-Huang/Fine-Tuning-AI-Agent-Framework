@@ -1,16 +1,49 @@
 #include <iostream>
+#include <string>
 #include <string_view>
 #include <variant>
 
 #include <nlohmann/json.hpp>
 
-#include "agents_framework/http/secrets.hpp"
-#include "agents_framework/llm/anthropic_backend.hpp"
-#include "agents_framework/llm/openai_backend.hpp"
+#include "agents_framework/core/dotenv.hpp"
+#include "agents_framework/llm/backend_factory.hpp"
 
 namespace {
 
 using namespace agents_framework;
+
+llm::MockBackend::Handler canned_replies() {
+  return [](const llm::ChatRequest& request) -> core::Result<llm::ChatResponse> {
+    std::string prompt;
+    bool answered_tool = false;
+    for (const auto& message : request.messages) {
+      for (const auto& block : message.content) {
+        if (const auto* text = std::get_if<llm::TextBlock>(&block)) {
+          prompt += text->text;
+        } else if (std::get_if<llm::ToolResultBlock>(&block) != nullptr) {
+          answered_tool = true;
+        }
+      }
+    }
+
+    llm::ChatResponse response;
+    if (!request.tools.empty() && !answered_tool) {
+      response.content.push_back(
+          llm::ToolUseBlock{"mock-tool-1", "get_weather", nlohmann::json{{"city", "Waterloo"}}});
+      response.stop_reason = llm::StopReason::ToolUse;
+    } else if (answered_tool) {
+      response.content.push_back(llm::TextBlock{"It is 18C and sunny in Waterloo."});
+    } else if (prompt.find("Count") != std::string::npos) {
+      response.content.push_back(llm::TextBlock{"1 2 3 4 5"});
+    } else {
+      response.content.push_back(
+          llm::TextBlock{"A directed graph is a set of nodes joined by edges that "
+                         "point from one node to another."});
+    }
+    response.usage = {12, 24};
+    return response;
+  };
+}
 
 void run_demo(std::string_view label, llm::LLMBackend& backend) {
   std::cout << "=== " << label << " (backend: " << backend.name() << ") ===\n";
@@ -85,20 +118,31 @@ void run_demo(std::string_view label, llm::LLMBackend& backend) {
 
 int main() {
   using namespace agents_framework;
-  bool ran = false;
 
-  if (auto key = http::SecretStore::from_env("ANTHROPIC_API_KEY")) {
-    llm::AnthropicBackend backend{std::move(*key)};
-    run_demo("Anthropic", backend);
-    ran = true;
+  if (const auto env_file = core::load_dotenv()) {
+    std::cout << "[env] loaded " << env_file->applied.size() << " variable(s) from "
+              << env_file->path.string() << "\n";
   }
-  if (auto key = http::SecretStore::from_env("OPENAI_API_KEY")) {
-    llm::OpenAiBackend backend{std::move(*key)};
-    run_demo("OpenAI", backend);
-    ran = true;
+
+  llm::BackendOptions options;
+  options.max_tokens = 256;
+  options.mock_handler = canned_replies();
+
+  const auto selection = llm::select_backend(llm::system_env(), options);
+  if (!selection) {
+    std::cerr << "[backend] " << selection.error().to_string() << "\n";
+    return 1;
   }
-  if (!ran) {
-    std::cout << "Set ANTHROPIC_API_KEY and/or OPENAI_API_KEY to run this demo.\n";
+  auto backend = llm::make_backend(*selection, std::move(options), llm::system_env());
+  if (!backend) {
+    std::cerr << "[backend] " << backend.error().to_string() << "\n";
+    return 1;
+  }
+
+  run_demo(selection->describe(), **backend);
+  if (!selection->live) {
+    std::cout << "Offline mock run. Set AF_BACKEND=openai (or anthropic) in .env for a "
+                 "live run.\n";
   }
   return 0;
 }
