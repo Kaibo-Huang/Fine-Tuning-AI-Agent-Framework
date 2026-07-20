@@ -3,4 +3,5 @@ target_sources(agents_framework PRIVATE
   registry.cpp
   process.cpp
   process_tool.cpp
+  http_tool.cpp
 )
