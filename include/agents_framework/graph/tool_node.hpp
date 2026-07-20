@@ -10,6 +10,7 @@
 
 #include "agents_framework/core/fixed_string.hpp"
 #include "agents_framework/core/result.hpp"
+#include "agents_framework/graph/graph.hpp"
 #include "agents_framework/graph/node.hpp"
 #include "agents_framework/graph/state.hpp"
 #include "agents_framework/llm/message.hpp"
@@ -65,6 +66,19 @@ class ToolNode final : public Node {
 template <class S, core::FixedString MessagesChannel = "messages">
 [[nodiscard]] std::unique_ptr<Node> make_tool_node(std::shared_ptr<tools::ToolRegistry> registry) {
   return std::make_unique<ToolNode<S, MessagesChannel>>(std::move(registry));
+}
+
+template <class S, core::FixedString MessagesChannel = "messages">
+[[nodiscard]] auto tools_router(std::string tools_node = "tools") {
+  return [tools_node = std::move(tools_node)](StateView<S> view) -> std::string {
+    const auto& messages = view.template get<MessagesChannel>();
+    if (!messages.empty()) {
+      for (const llm::ContentBlock& block : messages.back().content) {
+        if (std::holds_alternative<llm::ToolUseBlock>(block)) return tools_node;
+      }
+    }
+    return std::string{kEnd};
+  };
 }
 
 }
