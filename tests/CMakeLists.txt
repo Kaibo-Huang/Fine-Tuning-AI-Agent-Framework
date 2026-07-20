@@ -26,6 +26,7 @@ add_executable(agents_framework_tests
   graph/test_llm_node.cpp
   tools/test_registry.cpp
   tools/test_process.cpp
+  tools/test_http_tool.cpp
 )
 
 target_link_libraries(agents_framework_tests
