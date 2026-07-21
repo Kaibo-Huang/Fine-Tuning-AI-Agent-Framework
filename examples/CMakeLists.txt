@@ -1,2 +1,5 @@
 add_executable(chat_demo chat_demo.cpp)
 target_link_libraries(chat_demo PRIVATE agents_framework)
+
+add_executable(react_demo react_demo.cpp)
+target_link_libraries(react_demo PRIVATE agents_framework)
