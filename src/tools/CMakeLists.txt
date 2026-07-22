@@ -4,4 +4,5 @@ target_sources(agents_framework PRIVATE
   process.cpp
   process_tool.cpp
   http_tool.cpp
+  text_protocol.cpp
 )
