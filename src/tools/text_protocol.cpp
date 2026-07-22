@@ -3,6 +3,7 @@
 #include <array>
 #include <cctype>
 #include <utility>
+#include <variant>
 
 namespace agents_framework::tools {
 
@@ -198,6 +199,43 @@ std::optional<ParsedToolCall> parse_text_tool_call(std::string_view text) {
     if (auto call = extract_call(*object)) return call;
   }
   return std::nullopt;
+}
+
+std::string render_tool_instructions(std::span<const llm::ToolDef> tools) {
+  std::string out = "You have access to these tools:\n";
+  for (const llm::ToolDef& tool : tools) {
+    out += "\n- " + tool.name;
+    if (!tool.description.empty()) out += ": " + tool.description;
+    if (!tool.input_schema.empty()) {
+      out += "\n  input schema: " + tool.input_schema.dump();
+    }
+  }
+  out +=
+      "\n\nTo call a tool, respond with exactly one JSON object of the form\n"
+      "{\"tool\": \"<tool name>\", \"input\": {<arguments>}}\n"
+      "and no other text. When you have the final answer, respond with it directly "
+      "and do not include a JSON tool call.";
+  return out;
+}
+
+std::vector<llm::Message> render_text_messages(const std::vector<llm::Message>& messages) {
+  std::vector<llm::Message> rendered;
+  rendered.reserve(messages.size());
+  for (const llm::Message& message : messages) {
+    llm::Message copy{message.role, {}};
+    for (const llm::ContentBlock& block : message.content) {
+      if (const auto* text = std::get_if<llm::TextBlock>(&block)) {
+        copy.content.push_back(*text);
+      } else if (const auto* result = std::get_if<llm::ToolResultBlock>(&block)) {
+        std::string body = result->is_error ? "Tool call " + result->tool_use_id + " failed:\n"
+                                            : "Tool result for " + result->tool_use_id + ":\n";
+        body += result->content;
+        copy.content.push_back(llm::TextBlock{std::move(body)});
+      }
+    }
+    if (!copy.content.empty()) rendered.push_back(std::move(copy));
+  }
+  return rendered;
 }
 
 }
