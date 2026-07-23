@@ -27,6 +27,7 @@ add_executable(agents_framework_tests
   tools/test_registry.cpp
   tools/test_process.cpp
   tools/test_http_tool.cpp
+  tools/test_text_protocol.cpp
   graph/test_tool_node.cpp
 )
 
