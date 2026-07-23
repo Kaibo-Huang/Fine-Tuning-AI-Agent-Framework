@@ -10,6 +10,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "../live_env.hpp"
 #include "agents_framework/http/http_client.hpp"
 #include "agents_framework/http/secrets.hpp"
 #include "agents_framework/llm/openai_backend.hpp"
@@ -243,7 +244,8 @@ TEST_CASE("OpenAiBackend::generate_stream assembles a streamed tool call", "[ope
   REQUIRE(uses.front().input.at("q") == "cats");
 }
 
-TEST_CASE("OpenAiBackend live round-trip", "[openai][live]") {
+TEST_CASE("OpenAiBackend live round-trip", "[.live][openai]") {
+  test_support::load_env_once();
   auto key = agents_framework::http::SecretStore::from_env("OPENAI_API_KEY");
   if (!key) {
     SKIP("set OPENAI_API_KEY to run live OpenAI tests");
@@ -254,5 +256,11 @@ TEST_CASE("OpenAiBackend live round-trip", "[openai][live]") {
   request.sampling.max_tokens = 16;
   const auto result = backend.generate(request);
   REQUIRE(result.has_value());
+
   REQUIRE_FALSE(result->text().empty());
+  CHECK(result->role == Role::Assistant);
+  CHECK(result->stop_reason == StopReason::EndTurn);
+  CHECK(result->id.starts_with("chatcmpl"));
+  CHECK(result->usage.input_tokens > 0);
+  CHECK(result->usage.output_tokens > 0);
 }
