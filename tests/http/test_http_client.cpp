@@ -9,6 +9,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "../live_env.hpp"
 #include "agents_framework/http/http_client.hpp"
 
 using namespace agents_framework;
@@ -171,7 +172,8 @@ TEST_CASE("send_stream delivers body chunks to the callback", "[http]") {
   REQUIRE(assembled == "streamed");
 }
 
-TEST_CASE("CurlTransport performs a real HTTPS GET", "[http][live]") {
+TEST_CASE("CurlTransport performs a real HTTPS GET", "[.live][http]") {
+  test_support::load_env_once();
   if (std::getenv("AGENTS_LIVE_HTTP") == nullptr) {
     SKIP("set AGENTS_LIVE_HTTP to run live HTTP tests");
   }
