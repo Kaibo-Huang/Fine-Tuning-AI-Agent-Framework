@@ -1,6 +1,8 @@
 #include "agents_framework/graph/executor.hpp"
 
 #include <algorithm>
+#include <exception>
+#include <latch>
 #include <string>
 #include <utility>
 #include <vector>
@@ -21,6 +23,12 @@ core::Error annotate(core::Error error, std::string_view node, std::size_t step)
 
 }
 
+Executor::Executor(ExecutorOptions options) : options_(options) {
+  if (options_.workers > 1) {
+    pool_ = std::make_unique<core::ThreadPool>(options_.workers);
+  }
+}
+
 core::Result<RunStats> Executor::run(CompiledGraph& graph, ChannelMap& state,
                                      RunOptions options) {
   RunStats stats;
@@ -34,9 +42,29 @@ core::Result<RunStats> Executor::run(CompiledGraph& graph, ChannelMap& state,
     ++stats.steps;
 
     std::vector<core::Result<StateUpdate>> results;
-    results.reserve(active.size());
-    for (const std::size_t index : active) {
-      results.push_back(graph.node(index).run(state));
+    if (pool_ && active.size() > 1) {
+      results.resize(active.size());
+      std::vector<std::exception_ptr> exceptions(active.size());
+      std::latch done{static_cast<std::ptrdiff_t>(active.size())};
+      for (std::size_t i = 0; i < active.size(); ++i) {
+        pool_->submit([&graph, &state, &results, &exceptions, &done, &active, i] {
+          try {
+            results[i] = graph.node(active[i]).run(state);
+          } catch (...) {
+            exceptions[i] = std::current_exception();
+          }
+          done.count_down();
+        });
+      }
+      done.wait();
+      for (const std::exception_ptr& thrown : exceptions) {
+        if (thrown) std::rethrow_exception(thrown);
+      }
+    } else {
+      results.reserve(active.size());
+      for (const std::size_t index : active) {
+        results.push_back(graph.node(index).run(state));
+      }
     }
     stats.node_runs += active.size();
 
