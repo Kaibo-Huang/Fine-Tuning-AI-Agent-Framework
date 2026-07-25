@@ -9,6 +9,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "../live_env.hpp"
 #include "agents_framework/http/http_client.hpp"
 #include "agents_framework/http/secrets.hpp"
 #include "agents_framework/llm/mock_embedding.hpp"
@@ -143,14 +144,23 @@ TEST_CASE("a count mismatch between input and response is a protocol error",
   REQUIRE(response.error().code == core::ErrorCode::Protocol);
 }
 
-TEST_CASE("OpenAiEmbeddingBackend live round-trip", "[embedding][live]") {
+TEST_CASE("OpenAiEmbeddingBackend live round-trip", "[.live][embedding]") {
+  test_support::load_env_once();
   auto key = http::SecretStore::from_env("OPENAI_API_KEY");
   if (!key) {
     SKIP("set OPENAI_API_KEY to run live OpenAI tests");
   }
   llm::OpenAiEmbeddingBackend backend{std::move(*key)};
-  const auto response = backend.embed({"", {"hello world"}});
+  const auto response = backend.embed({"", {"hello world", "goodbye world"}});
   REQUIRE(response.has_value());
-  REQUIRE(response->embeddings.size() == 1);
-  REQUIRE(!response->embeddings.front().empty());
+  REQUIRE(response->embeddings.size() == 2);
+  REQUIRE(response->embeddings.front().size() == 1536);
+  CHECK(response->embeddings.back().size() == 1536);
+  CHECK(response->usage.input_tokens > 0);
+
+  double norm = 0.0;
+  for (const float value : response->embeddings.front()) {
+    norm += static_cast<double>(value) * static_cast<double>(value);
+  }
+  CHECK(std::abs(std::sqrt(norm) - 1.0) < 0.01);
 }
