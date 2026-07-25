@@ -10,6 +10,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "../live_env.hpp"
 #include "agents_framework/http/http_client.hpp"
 #include "agents_framework/http/secrets.hpp"
 #include "agents_framework/llm/anthropic_backend.hpp"
@@ -254,7 +255,8 @@ TEST_CASE("AnthropicBackend::generate_stream assembles a streamed tool call", "[
   REQUIRE(uses.front().input.at("q") == "cats");
 }
 
-TEST_CASE("AnthropicBackend live round-trip", "[anthropic][live]") {
+TEST_CASE("AnthropicBackend live round-trip", "[.live][anthropic]") {
+  test_support::load_env_once();
   auto key = agents_framework::http::SecretStore::from_env("ANTHROPIC_API_KEY");
   if (!key) {
     SKIP("set ANTHROPIC_API_KEY to run live Anthropic tests");
@@ -265,5 +267,11 @@ TEST_CASE("AnthropicBackend live round-trip", "[anthropic][live]") {
   request.sampling.max_tokens = 16;
   const auto result = backend.generate(request);
   REQUIRE(result.has_value());
+
   REQUIRE_FALSE(result->text().empty());
+  CHECK(result->role == Role::Assistant);
+  CHECK(result->stop_reason == StopReason::EndTurn);
+  CHECK(result->id.starts_with("msg_"));
+  CHECK(result->usage.input_tokens > 0);
+  CHECK(result->usage.output_tokens > 0);
 }
