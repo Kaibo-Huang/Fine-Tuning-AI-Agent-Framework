@@ -15,6 +15,7 @@ target_link_libraries(agents_framework
   PRIVATE
     CURL::libcurl
     spdlog::spdlog
+    unofficial::sqlite3::sqlite3
 )
 
 add_subdirectory(core)
@@ -22,3 +23,4 @@ add_subdirectory(http)
 add_subdirectory(llm)
 add_subdirectory(graph)
 add_subdirectory(tools)
+add_subdirectory(store)
