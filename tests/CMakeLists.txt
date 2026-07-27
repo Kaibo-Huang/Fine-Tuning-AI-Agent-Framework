@@ -30,6 +30,7 @@ add_executable(agents_framework_tests
   tools/test_text_protocol.cpp
   graph/test_tool_node.cpp
   graph/test_concurrency.cpp
+  store/test_db.cpp
 )
 
 target_link_libraries(agents_framework_tests
