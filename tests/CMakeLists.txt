@@ -43,6 +43,7 @@ add_executable(agents_framework_tests
   graph/test_retrieval_node.cpp
   graph/test_subgraph.cpp
   llm/test_backend_factory.cpp
+  llm/test_live_backend.cpp
 )
 
 target_link_libraries(agents_framework_tests
