@@ -109,7 +109,23 @@ core::Result<RunStats> Executor::run_loop(CompiledGraph& graph, ChannelMap& stat
                                                : CheckpointStatus::Running));
   }
 
+  bool approved = resuming;
   while (!active.empty()) {
+    if (!approved && !options.interrupt_before.empty()) {
+      const bool interrupted =
+          std::any_of(active.begin(), active.end(), [&](std::size_t index) {
+            return std::find(options.interrupt_before.begin(), options.interrupt_before.end(),
+                             graph.node_name(index)) != options.interrupt_before.end();
+          });
+      if (interrupted) {
+        stats.status = RunStatus::Interrupted;
+        stats.pending_nodes = names_of(active);
+        AF_TRY_VOID(save_checkpoint(step, active, CheckpointStatus::Interrupted));
+        return stats;
+      }
+    }
+    approved = false;
+
     if (stats.steps >= options.max_steps) {
       return core::fail(core::ErrorCode::Cancelled, "step budget exhausted",
                         "after " + std::to_string(stats.steps) + " super-steps");
