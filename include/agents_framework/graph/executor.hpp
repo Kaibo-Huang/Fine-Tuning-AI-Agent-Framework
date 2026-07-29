@@ -23,11 +23,16 @@ struct RunOptions {
   std::size_t max_steps{100};
   std::string run_id;
   Checkpointer* checkpointer{nullptr};
+  std::vector<std::string> interrupt_before;
 };
+
+enum class RunStatus { Completed, Interrupted };
 
 struct RunStats {
   std::size_t steps{0};
   std::size_t node_runs{0};
+  RunStatus status{RunStatus::Completed};
+  std::vector<std::string> pending_nodes;
 };
 
 class Executor {
