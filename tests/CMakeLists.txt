@@ -34,6 +34,7 @@ add_executable(agents_framework_tests
   store/test_migrate.cpp
   store/test_checkpoint_store.cpp
   graph/test_checkpoint.cpp
+  graph/test_replay.cpp
 )
 
 target_link_libraries(agents_framework_tests
