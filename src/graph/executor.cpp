@@ -43,7 +43,7 @@ Executor::Executor(ExecutorOptions options) : options_(options) {
 
 core::Result<RunStats> Executor::run(CompiledGraph& graph, ChannelMap& state,
                                      RunOptions options) {
-  if (options.run_id.empty() && options.checkpointer != nullptr) {
+  if (options.run_id.empty() && (options.checkpointer != nullptr || options.events)) {
     options.run_id = generate_run_id();
   }
   std::vector<std::size_t> active(graph.entry_nodes().begin(), graph.entry_nodes().end());
@@ -79,6 +79,9 @@ core::Result<RunStats> Executor::run_loop(CompiledGraph& graph, ChannelMap& stat
                                           std::uint64_t start_step, bool resuming) {
   RunStats stats;
 
+  const auto publish = [&options](ExecEvent event) {
+    if (options.events) options.events->publish(event);
+  };
   const auto names_of = [&graph](const std::vector<std::size_t>& indices) {
     std::vector<std::string> names;
     names.reserve(indices.size());
@@ -97,12 +100,14 @@ core::Result<RunStats> Executor::run_loop(CompiledGraph& graph, ChannelMap& stat
       core::Error error = std::move(saved).error();
       std::string where = "saving checkpoint (step " + std::to_string(at_step) + ")";
       error.context = error.context.empty() ? std::move(where) : error.context + "; " + where;
+      publish(RunFinished{options.run_id, at_step, false, error.to_string()});
       return std::unexpected(std::move(error));
     }
     return {};
   };
 
   std::uint64_t step = start_step;
+  publish(RunStarted{options.run_id, step});
   if (!resuming) {
     AF_TRY_VOID(save_checkpoint(step, active,
                                 active.empty() ? CheckpointStatus::Completed
@@ -121,17 +126,25 @@ core::Result<RunStats> Executor::run_loop(CompiledGraph& graph, ChannelMap& stat
         stats.status = RunStatus::Interrupted;
         stats.pending_nodes = names_of(active);
         AF_TRY_VOID(save_checkpoint(step, active, CheckpointStatus::Interrupted));
+        publish(RunInterrupted{options.run_id, step, stats.pending_nodes});
         return stats;
       }
     }
     approved = false;
 
     if (stats.steps >= options.max_steps) {
-      return core::fail(core::ErrorCode::Cancelled, "step budget exhausted",
-                        "after " + std::to_string(stats.steps) + " super-steps");
+      core::Error error{core::ErrorCode::Cancelled, "step budget exhausted",
+                        "after " + std::to_string(stats.steps) + " super-steps"};
+      publish(RunFinished{options.run_id, step, false, error.to_string()});
+      return std::unexpected(std::move(error));
     }
     ++stats.steps;
     ++step;
+
+    publish(StepStarted{options.run_id, step, names_of(active)});
+    for (const std::size_t index : active) {
+      publish(NodeStarted{options.run_id, step, std::string{graph.node_name(index)}});
+    }
 
     std::vector<core::Result<StateUpdate>> results;
     if (pool_ && active.size() > 1) {
@@ -161,13 +174,23 @@ core::Result<RunStats> Executor::run_loop(CompiledGraph& graph, ChannelMap& stat
     stats.node_runs += active.size();
 
     for (std::size_t i = 0; i < active.size(); ++i) {
+      publish(NodeFinished{options.run_id, step, std::string{graph.node_name(active[i])},
+                           results[i].has_value(),
+                           results[i] ? std::string{} : results[i].error().to_string()});
+    }
+    for (std::size_t i = 0; i < active.size(); ++i) {
       if (!results[i]) {
-        return std::unexpected(
-            annotate(std::move(results[i]).error(), graph.node_name(active[i]), step));
+        core::Error error =
+            annotate(std::move(results[i]).error(), graph.node_name(active[i]), step);
+        publish(RunFinished{options.run_id, step, false, error.to_string()});
+        return std::unexpected(std::move(error));
       }
     }
     for (auto& result : results) {
       state.apply(std::move(*result));
+    }
+    if (options.events && options.events->has_subscribers()) {
+      publish(StateUpdated{options.run_id, step, state.to_json()});
     }
 
     std::vector<std::size_t> next;
@@ -177,8 +200,9 @@ core::Result<RunStats> Executor::run_loop(CompiledGraph& graph, ChannelMap& stat
       if (graph.has_router(index)) {
         auto routed = graph.route(index, state);
         if (!routed) {
-          return std::unexpected(
-              annotate(std::move(routed).error(), graph.node_name(index), step));
+          core::Error error = annotate(std::move(routed).error(), graph.node_name(index), step);
+          publish(RunFinished{options.run_id, step, false, error.to_string()});
+          return std::unexpected(std::move(error));
         }
         next.insert(next.end(), routed->begin(), routed->end());
       }
@@ -192,6 +216,7 @@ core::Result<RunStats> Executor::run_loop(CompiledGraph& graph, ChannelMap& stat
                                                : CheckpointStatus::Running));
   }
 
+  publish(RunFinished{options.run_id, step, true, {}});
   return stats;
 }
 

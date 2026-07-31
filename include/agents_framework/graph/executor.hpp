@@ -10,6 +10,7 @@
 #include "agents_framework/core/thread_pool.hpp"
 #include "agents_framework/graph/channel_map.hpp"
 #include "agents_framework/graph/checkpoint.hpp"
+#include "agents_framework/graph/events.hpp"
 #include "agents_framework/graph/graph.hpp"
 #include "agents_framework/graph/state.hpp"
 
@@ -23,6 +24,7 @@ struct RunOptions {
   std::size_t max_steps{100};
   std::string run_id;
   Checkpointer* checkpointer{nullptr};
+  std::shared_ptr<EventBus> events;
   std::vector<std::string> interrupt_before;
 };
 
