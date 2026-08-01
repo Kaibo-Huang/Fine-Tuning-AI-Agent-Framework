@@ -11,6 +11,7 @@
 
 #include "agents_framework/core/fixed_string.hpp"
 #include "agents_framework/core/result.hpp"
+#include "agents_framework/graph/events.hpp"
 #include "agents_framework/graph/node.hpp"
 #include "agents_framework/graph/state.hpp"
 #include "agents_framework/llm/backend.hpp"
@@ -26,6 +27,8 @@ struct LlmNodeOptions {
   std::vector<llm::ToolDef> tools;
   llm::SamplingParams sampling;
   ToolCallFormat tool_format{ToolCallFormat::Native};
+  std::shared_ptr<EventBus> events;
+  std::string label{"llm"};
 };
 
 template <class S, core::FixedString MessagesChannel = "messages">
@@ -61,7 +64,7 @@ class LlmNode final : public Node {
       request.messages = tools::render_text_messages(messages);
     }
 
-    AF_TRY(auto response, backend_->generate(request));
+    AF_TRY(auto response, generate(request));
 
     llm::Message message{llm::Role::Assistant, std::move(response.content)};
     if (options_.tool_format == ToolCallFormat::TextProtocol) {
@@ -85,6 +88,17 @@ class LlmNode final : public Node {
   }
 
  private:
+  core::Result<llm::ChatResponse> generate(const llm::ChatRequest& request) {
+    if (options_.events && backend_->capabilities().streaming) {
+      return backend_->generate_stream(request, [this](const llm::StreamEvent& event) {
+        if (const auto* delta = std::get_if<llm::TextDelta>(&event)) {
+          options_.events->publish(TokenDelta{options_.label, delta->text});
+        }
+      });
+    }
+    return backend_->generate(request);
+  }
+
   std::string next_call_id() { return "call_" + std::to_string(++text_call_counter_); }
 
   std::shared_ptr<llm::LLMBackend> backend_;
