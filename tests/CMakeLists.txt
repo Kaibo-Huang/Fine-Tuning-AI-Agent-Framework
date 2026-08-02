@@ -36,6 +36,7 @@ add_executable(agents_framework_tests
   graph/test_checkpoint.cpp
   graph/test_replay.cpp
   graph/test_interrupt.cpp
+  graph/test_events.cpp
 )
 
 target_link_libraries(agents_framework_tests
