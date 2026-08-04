@@ -9,6 +9,10 @@ on:
         description: "Use build caches. Uncheck for a clean cold build."
         type: boolean
         default: true
+      run_live:
+        description: "Also run the [live] tests against a real provider (Linux only, needs the OPENAI_API_KEY secret, costs money)."
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -25,9 +29,11 @@ jobs:
           - name: Windows (MSVC x64)
             os: windows-2022
             preset: windows-msvc
+            test_bin: build/windows-msvc/tests/Debug/agents_framework_tests.exe
           - name: Linux (GCC)
             os: ubuntu-24.04
             preset: linux
+            test_bin: build/linux/tests/agents_framework_tests
 
     env:
       VCPKG_ROOT: ${{ github.workspace }}/vcpkg
@@ -36,6 +42,9 @@ jobs:
       VCPKG_BINARY_SOURCES: "${{ (github.event_name != 'workflow_dispatch' || inputs.cache) && 'clear;default,readwrite' || 'clear' }}"
       SCCACHE_GHA_ENABLED: "false"
       SCCACHE_DIR: ${{ github.workspace }}/.sccache
+      RUN_LIVE: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
     steps:
       - name: Checkout
@@ -111,8 +120,37 @@ jobs:
       - name: Build
         run: cmake --build --preset ${{ matrix.preset }}
 
-      - name: Test
+      - name: Test (offline)
+        id: offline
         run: ctest --preset ${{ matrix.preset }}
+
+      - name: Test (live)
+        id: live
+        if: runner.os == 'Linux' && env.RUN_LIVE == 'true' && env.OPENAI_API_KEY != ''
+        env:
+          AF_BACKEND: openai
+          AF_MODEL: gpt-4o-mini
+        run: ${{ matrix.test_bin }} "[live]" --success
+
+      - name: Live tests skipped
+        if: runner.os == 'Linux' && env.RUN_LIVE == 'true' && env.OPENAI_API_KEY == ''
+        run: |
+          echo "::warning::run_live was requested but the OPENAI_API_KEY secret is not set; live tests did not run."
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### ${{ matrix.name }}"
+            echo ""
+            echo "| stage | result |"
+            echo "|---|---|"
+            echo "| offline suite | ${{ steps.offline.outcome }} |"
+            echo "| live suite | ${{ steps.live.outcome || 'not requested' }} |"
+            echo ""
+            echo "Triggered by \`${{ github.event_name }}\` on \`${{ github.ref_name }}\` (${GITHUB_SHA::7})."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: sccache stats (Linux)
         if: runner.os == 'Linux' && env.USE_CACHE == 'true'
