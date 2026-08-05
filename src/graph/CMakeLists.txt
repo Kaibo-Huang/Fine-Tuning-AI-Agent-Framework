@@ -3,4 +3,5 @@ target_sources(agents_framework PRIVATE
   graph.cpp
   executor.cpp
   events.cpp
+  memory.cpp
 )
