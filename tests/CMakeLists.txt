@@ -33,6 +33,7 @@ add_executable(agents_framework_tests
   store/test_db.cpp
   store/test_migrate.cpp
   store/test_checkpoint_store.cpp
+  store/test_vector_store.cpp
   graph/test_checkpoint.cpp
   graph/test_replay.cpp
   graph/test_interrupt.cpp
