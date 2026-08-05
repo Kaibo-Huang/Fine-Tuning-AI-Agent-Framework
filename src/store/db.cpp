@@ -88,6 +88,11 @@ core::Result<void> Statement::reset() {
 
 int Statement::column_count() const { return sqlite3_column_count(stmt_); }
 
+std::string Statement::column_name(int column) const {
+  const char* name = sqlite3_column_name(stmt_, column);
+  return name == nullptr ? std::string{} : std::string{name};
+}
+
 bool Statement::column_is_null(int column) const {
   return sqlite3_column_type(stmt_, column) == SQLITE_NULL;
 }

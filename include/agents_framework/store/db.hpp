@@ -33,6 +33,7 @@ class Statement {
   core::Result<void> reset();
 
   [[nodiscard]] int column_count() const;
+  [[nodiscard]] std::string column_name(int column) const;
   [[nodiscard]] bool column_is_null(int column) const;
   [[nodiscard]] std::int64_t column_int64(int column) const;
   [[nodiscard]] double column_double(int column) const;
