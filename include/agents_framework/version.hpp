@@ -6,4 +6,6 @@ namespace agents_framework {
 
 [[nodiscard]] std::string_view version() noexcept;
 
-} 
+[[nodiscard]] std::string_view commit() noexcept;
+
+}
