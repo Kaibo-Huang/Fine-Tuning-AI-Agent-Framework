@@ -4,4 +4,5 @@ target_sources(agents_framework PRIVATE
   executor.cpp
   events.cpp
   memory.cpp
+  retrieval.cpp
 )
