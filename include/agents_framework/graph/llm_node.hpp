@@ -12,6 +12,7 @@
 #include "agents_framework/core/fixed_string.hpp"
 #include "agents_framework/core/result.hpp"
 #include "agents_framework/graph/events.hpp"
+#include "agents_framework/graph/memory.hpp"
 #include "agents_framework/graph/node.hpp"
 #include "agents_framework/graph/state.hpp"
 #include "agents_framework/llm/backend.hpp"
@@ -27,6 +28,7 @@ struct LlmNodeOptions {
   std::vector<llm::ToolDef> tools;
   llm::SamplingParams sampling;
   ToolCallFormat tool_format{ToolCallFormat::Native};
+  std::optional<std::size_t> max_messages;
   std::shared_ptr<EventBus> events;
   std::string label{"llm"};
 };
@@ -45,7 +47,10 @@ class LlmNode final : public Node {
 
   core::Result<StateUpdate> run(const ChannelMap& state) override {
     StateView<S> view(state);
-    const auto& messages = view.template get<MessagesChannel>();
+    const auto& full_history = view.template get<MessagesChannel>();
+    const std::vector<llm::Message> messages =
+        options_.max_messages ? window_messages(full_history, *options_.max_messages)
+                              : full_history;
 
     llm::ChatRequest request;
     request.model = options_.model;
