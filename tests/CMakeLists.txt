@@ -40,6 +40,7 @@ add_executable(agents_framework_tests
   graph/test_events.cpp
   llm/test_embedding.cpp
   graph/test_retrieval_node.cpp
+  graph/test_subgraph.cpp
 )
 
 target_link_libraries(agents_framework_tests
