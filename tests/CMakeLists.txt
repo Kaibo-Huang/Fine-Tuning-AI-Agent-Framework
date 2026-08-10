@@ -47,6 +47,7 @@ add_executable(agents_framework_tests
   graph/test_live_graph.cpp
   trace/test_trace.cpp
   trace/test_capture.cpp
+  trace/test_trace_store.cpp
 )
 
 target_link_libraries(agents_framework_tests
