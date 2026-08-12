@@ -49,6 +49,7 @@ add_executable(agents_framework_tests
   trace/test_capture.cpp
   trace/test_trace_store.cpp
   trace/test_dataset.cpp
+  trace/test_training_channel.cpp
 )
 
 target_link_libraries(agents_framework_tests
