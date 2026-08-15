@@ -51,6 +51,7 @@ add_executable(agents_framework_tests
   trace/test_dataset.cpp
   trace/test_training_channel.cpp
   eval/test_task_suite.cpp
+  eval/test_verifiers.cpp
 )
 
 target_link_libraries(agents_framework_tests
