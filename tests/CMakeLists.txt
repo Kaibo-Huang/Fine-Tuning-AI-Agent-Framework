@@ -53,6 +53,7 @@ add_executable(agents_framework_tests
   eval/test_task_suite.cpp
   eval/test_verifiers.cpp
   eval/test_evaluator.cpp
+  eval/test_text_to_sql.cpp
 )
 
 target_link_libraries(agents_framework_tests
