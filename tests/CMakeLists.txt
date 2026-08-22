@@ -54,6 +54,7 @@ add_executable(agents_framework_tests
   eval/test_verifiers.cpp
   eval/test_evaluator.cpp
   eval/test_text_to_sql.cpp
+  eval/test_harness.cpp
   eval/test_eval_store.cpp
 )
 
