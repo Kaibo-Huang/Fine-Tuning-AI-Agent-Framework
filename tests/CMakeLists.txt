@@ -30,6 +30,7 @@ add_executable(agents_framework_tests
   tools/test_http_tool.cpp
   tools/test_text_protocol.cpp
   graph/test_tool_node.cpp
+  graph/test_prebuilt.cpp
   graph/test_concurrency.cpp
   store/test_db.cpp
   store/test_migrate.cpp
