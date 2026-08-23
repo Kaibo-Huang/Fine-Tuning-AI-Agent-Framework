@@ -56,6 +56,7 @@ add_executable(agents_framework_tests
   eval/test_text_to_sql.cpp
   eval/test_harness.cpp
   eval/test_eval_store.cpp
+  eval/test_third_domain.cpp
 )
 
 target_link_libraries(agents_framework_tests
