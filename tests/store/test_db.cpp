@@ -125,3 +125,10 @@ TEST_CASE("a database is movable and closes cleanly", "[store][db]") {
   REQUIRE(moved.is_open());
   REQUIRE(moved.exec("CREATE TABLE t (v TEXT)"));
 }
+
+TEST_CASE("open_shared returns a ready shared handle", "[store][db]") {
+  const auto db = store::Db::open_memory_shared();
+  REQUIRE(db);
+  REQUIRE((*db)->is_open());
+  REQUIRE((*db)->exec("CREATE TABLE t (v TEXT)"));
+}

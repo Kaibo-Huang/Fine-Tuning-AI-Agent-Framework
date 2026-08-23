@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <span>
 #include <string>
 #include <string_view>
@@ -59,6 +60,10 @@ class Db {
 
   static core::Result<Db> open(const std::string& path);
   static core::Result<Db> open_memory();
+
+  // The stores all take a shared handle; these open one in a single call.
+  static core::Result<std::shared_ptr<Db>> open_shared(const std::string& path);
+  static core::Result<std::shared_ptr<Db>> open_memory_shared();
 
   [[nodiscard]] bool is_open() const noexcept { return db_ != nullptr; }
 

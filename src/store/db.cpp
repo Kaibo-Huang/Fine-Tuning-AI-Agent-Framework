@@ -86,6 +86,16 @@ core::Result<void> Statement::reset() {
   return {};
 }
 
+core::Result<std::shared_ptr<Db>> Db::open_shared(const std::string& path) {
+  AF_TRY(auto db, open(path));
+  return std::make_shared<Db>(std::move(db));
+}
+
+core::Result<std::shared_ptr<Db>> Db::open_memory_shared() {
+  AF_TRY(auto db, open_memory());
+  return std::make_shared<Db>(std::move(db));
+}
+
 int Statement::column_count() const { return sqlite3_column_count(stmt_); }
 
 std::string Statement::column_name(int column) const {
