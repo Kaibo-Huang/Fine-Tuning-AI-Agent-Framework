@@ -156,3 +156,17 @@ TEST_CASE("the schema validator covers enums, arrays, and closed objects", "[too
 
   REQUIRE(tools::validate_args(nlohmann::json::object(), {{"anything", "goes"}}));
 }
+
+TEST_CASE("a def and callback register directly without make_tool", "[tools][registry]") {
+  tools::ToolRegistry registry;
+  llm::ToolDef def;
+  def.name = "ping";
+  def.description = "Reply with pong.";
+  REQUIRE(registry.add(std::move(def), [](const nlohmann::json&) -> core::Result<std::string> {
+    return std::string{"pong"};
+  }));
+
+  const auto result = registry.invoke("ping", nlohmann::json::object());
+  REQUIRE(result);
+  REQUIRE(*result == "pong");
+}

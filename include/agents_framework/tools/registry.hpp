@@ -18,6 +18,11 @@ class ToolRegistry {
  public:
   core::Result<void> add(std::unique_ptr<Tool> tool);
 
+  // The common case in one call: a JSON-schema definition plus its callback.
+  core::Result<void> add(llm::ToolDef def, ToolFn fn) {
+    return add(make_tool(std::move(def), std::move(fn)));
+  }
+
   [[nodiscard]] Tool* find(std::string_view name) noexcept;
   [[nodiscard]] const Tool* find(std::string_view name) const noexcept;
   [[nodiscard]] std::vector<llm::ToolDef> defs() const;
