@@ -6,3 +6,6 @@ target_link_libraries(react_demo PRIVATE agents_framework)
 
 add_executable(orchestration_demo orchestration_demo.cpp)
 target_link_libraries(orchestration_demo PRIVATE agents_framework)
+
+add_executable(eval_demo eval_demo.cpp)
+target_link_libraries(eval_demo PRIVATE agents_framework)
