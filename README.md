@@ -4,81 +4,85 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![C++23](https://img.shields.io/badge/C%2B%2B-23-informational)
 
-A C++23 framework for **creating, orchestrating, and fine-tuning AI agents** — think
+A C++23 framework for **creating, orchestrating, and fine-tuning AI agents**: think
 LangChain + LangGraph, but as a native systems library with direct control over
 scheduling, state, persistence, and (soon) the training stack itself.
 
-The core idea: **training and orchestration live in the same process, so fine-tuning
-becomes a tool call.** An agent's own execution traces — verified tool results,
-successful completions, failure/correction pairs — are the dataset, and the graph can
-decide to train, evaluate against a baseline, and hot-swap or roll back an adapter as
-ordinary graph operations.
+The core idea: **use better LLMs to train worse ones.** A model cannot train itself;
+supervision has to come from something stronger. The framework is built around three
+transfers, each moving capability from a stronger source into a small, cheap artifact:
+
+| Verb | The transfer | Status |
+|---|---|---|
+| `finetune` | from a curated dataset into a LoRA adapter | planned (Phase 5) |
+| `distill` | from a better model, or an entire expensive multi-node graph, into one small fast model | planned (Phase 5) |
+| `port` | from an old base model onto a new one, by refitting a thin alignment layer instead of retraining (a C++ port of [portallib](https://github.com/ramp-public/portallib)) | planned (Phase 6) |
+
+The orchestration engine exists to make those transfers cheap and measurable. It runs
+the teacher graphs that generate training data, the eval harness that scores a student
+against a recorded baseline with confidence intervals, and the adapter lifecycle that
+hot-swaps or rolls back the result.
 
 ## What works today
 
-- **LLM backend abstraction** — one canonical request/response/tool-call format over
+- **LLM backend abstraction**: one canonical request/response/tool-call format over
   the **Anthropic Messages API**, any **OpenAI-compatible** server (OpenAI, OpenRouter,
   vLLM, llama.cpp), and a deterministic **mock backend** for offline development and CI.
   Blocking and token-streaming paths, native function calling with a tolerant
   text-protocol fallback.
-- **Typed state graphs** — shared state is a compile-time schema of named channels with
+- **Typed state graphs**: shared state is a compile-time schema of named channels with
   reducers (`Channel<"messages", std::vector<Message>, Append>`). No codegen, no
   hot-path type lookups.
-- **Deterministic concurrent execution** — a Pregel-style super-step scheduler: active
-  nodes run in parallel on a thread pool, outputs merge at a barrier in a deterministic
-  order. Conditional edges, cycles with step budgets, and reproducible runs given the
-  same inputs and seeds.
-- **Persistence & time travel** — every super-step checkpoints to embedded SQLite:
-  resume, replay, fork any past step, and pause for human approval
+- **Deterministic concurrent execution**: a Pregel-style super-step scheduler. Active
+  nodes run in parallel on a thread pool and their outputs merge at a barrier in a
+  deterministic order. Conditional edges, cycles with step budgets, and reproducible
+  runs given the same inputs and seeds.
+- **Persistence and time travel**: every super-step checkpoints to embedded SQLite.
+  Resume, replay, fork any past step, and pause for human approval
   (`interrupt_before`) with the run resuming from the stored checkpoint.
-- **Tools** — native C++, subprocess, and HTTP tools behind one JSON-schema registry
+- **Tools**: native C++, subprocess, and HTTP tools behind one JSON-schema registry
   with argument validation.
-- **Memory & RAG** — an `EmbeddingBackend` seam, a SQLite-backed vector store, and a
+- **Memory and RAG**: an `EmbeddingBackend` seam, a SQLite-backed vector store, and a
   retrieval node type.
-- **Multi-agent** — agents are graphs; mount one inside another as a subgraph node with
-  typed state translation in and out. Supervisor/hand-off patterns are just edges.
-- **Traces, datasets & evaluation** — structured trace capture into SQLite, a
+- **Multi-agent**: agents are graphs, so an agent mounts inside another as a subgraph
+  node with typed state translation in and out. Supervisor and hand-off patterns are
+  just edges.
+- **Traces, datasets, and evaluation**: structured trace capture into SQLite, a
   `TaskSuite` seam for pluggable domains, built-in verifiers (exact match, numeric
   tolerance, result-set comparison, subprocess exit code, LLM-judge), and an eval
   harness that fans an agent across a suite concurrently and reports
-  **accuracy ± 95% confidence interval**, pinned to the model, seed, framework version,
-  and commit that produced it. Verified traces export directly as JSONL training data.
+  **accuracy with a 95% confidence interval**, pinned to the model, seed, framework
+  version, and commit that produced it. Verified teacher traces export directly as
+  JSONL training data for a student model.
 
 ## Roadmap
 
-The training stack lands next, as three verbs a graph can call:
-
-| Verb | What it does | Status |
-|---|---|---|
-| `finetune` | LoRA SFT on a dataset — external files or the agent's own traces | planned (Phase 5) |
-| `distill` | a larger model — or an entire multi-node graph — teaches one small fast model | planned (Phase 5) |
-| `port` | carry a task adaptation onto a **new base model** from a small calibration set, instead of retraining from scratch (a C++ port of [portallib](https://github.com/ramp-public/portallib)) | planned (Phase 6) |
-
-Phase 4 (LibTorch inference, `safetensors` weight loading, LoRA, local + remote
-training runners) is the current focus.
+Phases 0 through 3 (the orchestration engine and the measurement stack) are complete.
+Phase 4 is the current focus: LibTorch inference, `safetensors` weight loading, LoRA,
+and local plus remote training runners. The three verbs land in Phases 5 and 6. The
+full design, build order, and acceptance criteria live in [PLAN.md](PLAN.md).
 
 ## Documentation
 
-- **[Orchestrating Agents, Step by Step](docs/guide/README.md)** — the guide: start
+- **[Orchestrating Agents, Step by Step](docs/guide/README.md)**: the guide. Start
   from a raw model call and build up through graphs, tools, streaming, checkpoints,
-  retrieval, multi-agent composition, and evaluation, one step at a time
-- **[Architecture](docs/architecture.md)** — the reference view: modules, the
+  retrieval, multi-agent composition, and evaluation, one step at a time.
+- **[Architecture](docs/architecture.md)**: the reference view. Modules, the
   typed-channel state model, the deterministic super-step executor, persistence, and
-  the conventions the code follows
-- **[Examples walkthrough](docs/examples.md)** — what each demo shows, what to look at
-  in the code, and how to point it at a live provider
-- **[PLAN.md](PLAN.md)** — the full design document: scope, build order, and
-  acceptance criteria for every phase
+  the conventions the code follows.
+- **[Examples walkthrough](docs/examples.md)**: what each demo shows, what to look at
+  in the code, and how to point it at a live provider.
+- **[PLAN.md](PLAN.md)**: the full design document, with scope, build order, and
+  acceptance criteria for every phase.
 
 ## Quick start
 
 ### Prerequisites
 
-- CMake ≥ 3.23
+- CMake 3.23 or newer
 - [vcpkg](https://github.com/microsoft/vcpkg), with the `VCPKG_ROOT` environment
-  variable pointing at it (dependencies — libcurl, nlohmann-json, spdlog, sqlite3,
-  Catch2 — install automatically on first configure)
-- Windows: Visual Studio 2022 (MSVC x64) · Linux: GCC 13+ or Clang 17+, and Ninja
+  variable pointing at it (dependencies install automatically on first configure)
+- Windows: Visual Studio 2022 (MSVC x64). Linux: GCC 13+ or Clang 17+, and Ninja.
 
 ### Build and test
 
@@ -96,7 +100,7 @@ ctest --preset linux
 
 ### Run the examples
 
-Every example runs fully offline against the mock backend by default — no API key
+Every example runs fully offline against the mock backend by default, no API key
 needed. Binaries land in `build/windows-msvc/examples/Debug/` (Windows) or
 `build/linux/examples/` (Linux). Each one is walked through in detail in
 [docs/examples.md](docs/examples.md).
@@ -104,8 +108,8 @@ needed. Binaries land in `build/windows-msvc/examples/Debug/` (Windows) or
 | Example | What it shows |
 |---|---|
 | `chat_demo` | the backend abstraction: a reply, a token stream, and a full tool round-trip |
-| `react_demo` | a minimal ReAct agent — an LLM node and a tool node routed in a loop |
-| `orchestration_demo` | a supervisor delegating to subgraph agents, with RAG retrieval, event streaming, SQLite checkpoints, and a human-in-the-loop pause/resume |
+| `react_demo` | a minimal ReAct agent, an LLM node and a tool node routed in a loop |
+| `orchestration_demo` | a supervisor delegating to subgraph agents, with RAG retrieval, event streaming, SQLite checkpoints, and a human-in-the-loop pause and resume |
 | `eval_demo` | the measurement stack: a text-to-SQL task suite scored with confidence intervals, baseline recording, and verified traces exported as training data |
 
 To point the same code at a live provider, create a `.env` file (or set the
@@ -116,7 +120,7 @@ environment) as described below.
 The whole ReAct loop from `react_demo`, minus the printing:
 
 ```cpp
-using Messages   = Channel<"messages", std::vector<Message>, Append>;
+using Messages    = Channel<"messages", std::vector<Message>, Append>;
 using AgentSchema = Schema<Messages>;
 
 GraphBuilder<AgentSchema> builder;
@@ -145,9 +149,9 @@ automatically and never overrides variables already set in the environment.
 
 | Variable | Values | Meaning |
 |---|---|---|
-| `AF_BACKEND` | `mock` (default) · `anthropic` · `openai` | which backend to use |
+| `AF_BACKEND` | `mock` (default), `anthropic`, `openai` | which backend to use |
 | `AF_MODEL` | a model id | override the backend's default model |
-| `AF_BASE_URL` | a URL | point the OpenAI-compatible backend at OpenRouter, vLLM, llama.cpp, … |
+| `AF_BASE_URL` | a URL | point the OpenAI-compatible backend at OpenRouter, vLLM, llama.cpp, and similar servers |
 | `ANTHROPIC_API_KEY` | key | required for `AF_BACKEND=anthropic` |
 | `OPENAI_API_KEY` | key | required for `AF_BACKEND=openai` |
 
