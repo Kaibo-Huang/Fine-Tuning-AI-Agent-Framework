@@ -1,8 +1,8 @@
-# Step 6 — Add Memory and Retrieval
+# Step 6: Add Memory and Retrieval
 
 Short-term memory is already solved: it is the conversation living on a state
-channel. Long-term memory is a vector store plus a retrieval node — this step wires
-both.
+channel. Long-term memory is a vector store plus a retrieval node, and this step
+wires both.
 
 ## 1. Choose an embedding backend
 
@@ -35,7 +35,7 @@ Each entry is an id, a vector, the original text, and optional metadata.
 
 ## 3. Add retrieval to the graph
 
-The state needs two more channels — the query going in and the documents coming out:
+The state needs two more channels, the query going in and the documents coming out:
 
 ```cpp
 using Query = Channel<"query", std::string>;
@@ -65,7 +65,7 @@ builder
     .set_finish("answer");
 ```
 
-That three-node chain — retrieve, compose, answer — **is** RAG. Because it is an
+That three-node chain (retrieve, compose, answer) **is** RAG. Because it is an
 ordinary graph, everything from the previous steps applies unchanged: it streams, it
 checkpoints, it can pause for approval.
 
@@ -76,4 +76,4 @@ The research agent inside
 this graph, seeded with a three-document corpus (one of them a decoy that retrieval
 should rank last).
 
-**Next:** [Step 7 — Compose agents as subgraphs](07-multi-agent.md)
+**Next:** [Step 7: Compose agents as subgraphs](07-multi-agent.md)

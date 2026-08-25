@@ -1,4 +1,4 @@
-# Step 5 — Checkpoint, Resume, and Ask a Human
+# Step 5: Checkpoint, Resume, and Ask a Human
 
 With a checkpointer attached, the executor saves the whole graph state to SQLite
 after every super-step. One mechanism buys three capabilities: resuming a run,
@@ -12,7 +12,7 @@ auto checkpoints = *CheckpointStore::open(db);
 ```
 
 (Both calls return `Result`s; the examples wrap them in a small `need()` helper that
-prints the error and exits — do the same or handle them properly.)
+prints the error and exits. Do the same or handle them properly.)
 
 ## 2. Checkpoint every step
 
@@ -25,7 +25,7 @@ const RunOptions options{.run_id = "run-42",
 executor.run(*graph, state, options);
 ```
 
-That is the entire integration. Each super-step now persists the serialized state —
+That is the entire integration. Each super-step now persists the serialized state;
 the channel schema you declared in Step 2 already knows how to serialize itself.
 
 ## 3. Pause for approval
@@ -40,7 +40,7 @@ const RunOptions options{.run_id = "run-42",
 const auto paused = executor.run(*graph, state, options);
 
 if (paused->status == RunStatus::Interrupted) {
-  // paused->pending_nodes tells you what is waiting — here: "report"
+  // paused->pending_nodes tells you what is waiting; here: "report"
 }
 ```
 
@@ -58,7 +58,7 @@ auto restored = *State<AgentSchema>::deserialize(checkpoint.state);
 executor.resume(*graph, restored, checkpoint, options);
 ```
 
-The resumed run continues from exactly the barrier it stopped at — the pending nodes
+The resumed run continues from exactly the barrier it stopped at: the pending nodes
 run next, and checkpointing continues as before.
 
 ## 5. Time travel
@@ -69,7 +69,7 @@ Every step of every run is retained, so history is queryable and forkable:
 const auto history = *checkpoints.list("run-42");   // one entry per super-step
 ```
 
-`CheckpointStore::fork` starts a new run from any past step — the debugging move
+`CheckpointStore::fork` starts a new run from any past step. It is the debugging move
 when you want to know "what would have happened if the state had been different at
 step 3?", and the foundation of deterministic replay.
 
@@ -77,6 +77,6 @@ step 3?", and the foundation of deterministic replay.
 
 [`examples/orchestration_demo.cpp`](../../examples/orchestration_demo.cpp) runs with
 `interrupt_before = {"report"}`, prints the pending node, then reloads the checkpoint
-and resumes — a complete approval flow, minus the human.
+and resumes: a complete approval flow, minus the human.
 
-**Next:** [Step 6 — Add memory and retrieval](06-memory-and-rag.md)
+**Next:** [Step 6: Add memory and retrieval](06-memory-and-rag.md)

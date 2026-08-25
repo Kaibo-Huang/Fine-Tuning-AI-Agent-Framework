@@ -1,4 +1,4 @@
-# Step 2 — Build Your First Graph
+# Step 2: Build Your First Graph
 
 An agent is a graph: nodes do work, edges decide what runs next, and all of them
 share one typed state. This step builds the smallest possible one.
@@ -13,7 +13,7 @@ using Messages    = Channel<"messages", std::vector<Message>, Append>;
 using AgentSchema = Schema<Messages>;
 ```
 
-`Append` means every node's output is appended — exactly right for a conversation.
+`Append` means every node's output is appended, exactly right for a conversation.
 Without a reducer, the last write wins. Because names are template parameters,
 `state.get<"messages">()` is fully typed and checked at compile time; there is no
 string lookup at run time.
@@ -21,7 +21,7 @@ string lookup at run time.
 ## 2. Write a node
 
 A node reads the state through a `StateView` and returns an `Update`. It never
-mutates shared state directly — the executor applies updates through the reducers:
+mutates shared state directly; the executor applies updates through the reducers:
 
 ```cpp
 auto greet = [](StateView<AgentSchema> view) {
@@ -55,7 +55,7 @@ auto graph = std::move(builder).compile();
 if (!graph) { /* compile() validates the wiring: unknown nodes, unreachable states */ }
 ```
 
-Compilation is where structural mistakes surface — before anything runs.
+Compilation is where structural mistakes surface, before anything runs.
 
 ## 4. Run it
 
@@ -72,7 +72,7 @@ std::cout << stats->steps << " super-steps, " << stats->node_runs << " node runs
 The executor advances in **super-steps**: every active node runs (concurrently, when
 there are several), the outputs are buffered, and at a barrier they are applied to
 the state in a deterministic order. Given the same inputs, seeds, and model outputs,
-a run is reproducible — that guarantee is what later makes replay and evaluation
+a run is reproducible. That guarantee is what later makes replay and evaluation
 trustworthy.
 
 After the run, `state` holds the final conversation:
@@ -81,5 +81,5 @@ After the run, `state` holds the final conversation:
 const auto& messages = state.get<"messages">();  // your message + the model's reply
 ```
 
-**Next:** [Step 3 — Wire the ReAct tool loop](03-tools.md), where edges start making
+**Next:** [Step 3: Wire the ReAct tool loop](03-tools.md), where edges start making
 decisions.

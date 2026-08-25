@@ -1,4 +1,4 @@
-# Step 1 — Talk to a Model
+# Step 1: Talk to a Model
 
 Everything in the framework sits on one backend interface, `LLMBackend`, which
 exchanges a canonical request/response format. The Anthropic backend, the
@@ -29,7 +29,7 @@ auto backend = *opened;  // unwrap the Result once; backend is a shared_ptr<LLMB
 ```
 
 With no configuration at all you get the mock backend, which is deterministic and
-free — the right default while you build the graph around it.
+free: the right default while you build the graph around it.
 
 ## 2. Send a message
 
@@ -42,13 +42,13 @@ const auto reply = backend->generate(request);
 if (reply) std::cout << reply->text() << "\n";
 ```
 
-Recoverable failures — a missing key, a network error, a refusal to parse — come back
+Recoverable failures (a missing key, a network error, a refusal to parse) come back
 as `Result<T>` (`std::expected<T, Error>`), never as exceptions.
 
 ## 3. Stream the reply
 
-The same request, delivered token by token. For the common case — you just want the
-text — wrap a plain callback in `on_text`:
+The same request, delivered token by token. For the common case, where you just want
+the text, wrap a plain callback in `on_text`:
 
 ```cpp
 const auto reply = backend->generate_stream(
@@ -56,7 +56,7 @@ const auto reply = backend->generate_stream(
 ```
 
 When you need more than text, pass a full `StreamCallback` instead: it receives every
-`StreamEvent` — tool-call deltas, the stop reason and token usage, stream errors — as
+`StreamEvent` (tool-call deltas, the stop reason and token usage, stream errors) as
 a variant you match on.
 
 ## 4. Make the mock speak
@@ -79,7 +79,7 @@ without a key or a network.
 ## Complete example
 
 [`examples/chat_demo.cpp`](../../examples/chat_demo.cpp) runs all of the above plus a
-full tool round-trip — which is where the next steps take over: instead of calling
+full tool round-trip, which is where the next steps take over: instead of calling
 `generate` by hand, you'll put the model inside a graph.
 
-**Next:** [Step 2 — Build your first graph](02-first-graph.md)
+**Next:** [Step 2: Build your first graph](02-first-graph.md)

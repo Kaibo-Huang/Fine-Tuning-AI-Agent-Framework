@@ -1,8 +1,8 @@
-# Step 8 — Measure the Agent
+# Step 8: Measure the Agent
 
 An agent you cannot measure is an agent you cannot improve. The eval harness runs an
 agent over a task suite, scores every instance with a verifier, and reports accuracy
-with a confidence interval — the number all later changes are judged against.
+with a confidence interval: the number all later changes are judged against.
 
 ## 1. Get a task suite
 
@@ -15,7 +15,7 @@ auto suite = *TextToSqlSuite::create(default_text_to_sql_spec());
 ```
 
 Its verifier executes the predicted and gold SQL against multiple database instances
-and compares result sets — so a query that is wrong but happens to match on one
+and compares result sets, so a query that is wrong but happens to match on one
 dataset is still caught.
 
 ## 2. Wrap your agent
@@ -36,7 +36,7 @@ AgentFn agent = [&](const TaskInstance& instance) -> Result<AgentOutput> {
 };
 ```
 
-Attach a `Trace` to the output and the harness persists it — that is what makes the
+Attach a `Trace` to the output and the harness persists it. That is what makes the
 dataset export in step 5 possible.
 
 ## 3. Run the harness
@@ -54,8 +54,8 @@ options.store   = &evals;
 const auto report = *run_eval(suite, agent, options);
 ```
 
-The report is pinned to everything needed to reproduce it — seed, model, framework
-version, git commit — and every per-instance result is persisted so two runs can be
+The report is pinned to everything needed to reproduce it (seed, model, framework
+version, git commit), and every per-instance result is persisted so two runs can be
 diffed later:
 
 ```text
@@ -77,12 +77,13 @@ const auto delta = *compare(baseline_report, candidate_report);
 // delta.delta, delta.ci, delta.significant
 ```
 
-`compare` returns a signed delta with its own interval — the honest answer to "did
+`compare` returns a signed delta with its own interval: the honest answer to "did
 that change help?".
 
-## 5. Turn verified runs into training data
+## 5. Turn verified teacher runs into training data
 
-Traces whose outputs actually verified are exactly the examples worth training on:
+Run a *strong* model through the harness and the traces the verifier accepted are
+exactly the examples a smaller model should be trained on:
 
 ```cpp
 TraceQuery query;
@@ -94,13 +95,14 @@ const auto dataset  = *build_dataset(verified, {});
 (void)write_jsonl(dataset, "dataset.jsonl");
 ```
 
-This is the bridge to the framework's roadmap: the upcoming `finetune` tool call
-consumes precisely this kind of dataset, closing the loop from execution to training
-inside the same process.
+This is the bridge to the framework's core idea: better models train worse ones. The
+upcoming `distill` feature consumes precisely this kind of dataset, with a teacher
+authoring the examples and a verifier gating what gets in. A model is never trained
+on its own outputs; the supervision always comes from something stronger.
 
 ## Complete example
 
-[`examples/eval_demo.cpp`](../../examples/eval_demo.cpp) runs this whole chapter —
+[`examples/eval_demo.cpp`](../../examples/eval_demo.cpp) runs this whole chapter,
 including two deliberately wrong answers, so you can watch the verifier catch a
 near-miss that string comparison would have accepted.
 

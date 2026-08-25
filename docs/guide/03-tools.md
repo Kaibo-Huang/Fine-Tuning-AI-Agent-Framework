@@ -1,4 +1,4 @@
-# Step 3 — Wire the ReAct Tool Loop
+# Step 3: Wire the ReAct Tool Loop
 
 A ReAct agent alternates between reasoning (the model) and acting (tools) until it
 has an answer. In this framework that is two nodes and two edges.
@@ -29,7 +29,7 @@ auto evaluate = [](const json& args) -> Result<std::string> {
 };
 ```
 
-Returning an error from the callback is fine — it flows back to the model as a tool
+Returning an error from the callback is fine; it flows back to the model as a tool
 result, and the model gets a chance to recover.
 
 ## 2. Register it
@@ -59,8 +59,8 @@ builder.add_node("agent", make_llm_node<AgentSchema>(backend, options))
 ```
 
 Read the wiring as a sentence: start at **agent**; after it runs, the conditional
-edge (`tools_router`) checks whether the model asked for a tool — if yes, go to
-**tools**, if no, the run **ends**; **tools** always hands the conversation back to
+edge (`tools_router`) checks whether the model asked for a tool. If yes, go to
+**tools**; if no, the run **ends**. **tools** always hands the conversation back to
 **agent**.
 
 `tools_router` is a prebuilt router. A conditional edge can be any function of the
@@ -79,12 +79,12 @@ Executor executor;
 const auto stats = executor.run(*graph, state, RunOptions{.max_steps = 10});
 ```
 
-Afterwards the `messages` channel contains the full trajectory — the tool call, the
-tool result, and the final answer — because every node appended to it.
+Afterwards the `messages` channel contains the full trajectory (the tool call, the
+tool result, and the final answer) because every node appended to it.
 
 ## Complete example
 
 [`examples/react_demo.cpp`](../../examples/react_demo.cpp) is this step verbatim,
 plus transcript printing and the scripted mock trajectory.
 
-**Next:** [Step 4 — Stream events from a run](04-streaming-and-events.md)
+**Next:** [Step 4: Stream events from a run](04-streaming-and-events.md)

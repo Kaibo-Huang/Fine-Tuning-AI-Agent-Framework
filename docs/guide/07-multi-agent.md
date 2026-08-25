@@ -1,6 +1,6 @@
-# Step 7 — Compose Agents as Subgraphs
+# Step 7: Compose Agents as Subgraphs
 
-An agent in this framework is a compiled graph — which means an agent can be a
+An agent in this framework is a compiled graph, which means an agent can be a
 *node* in a bigger graph. Multi-agent systems are composition, not a new concept.
 
 ## 1. Keep each agent's state private
@@ -56,17 +56,17 @@ builder
     .set_finish("report");
 ```
 
-`pick_agent` is a plain function returning the next node's name — route on keywords,
+`pick_agent` is a plain function returning the next node's name: route on keywords,
 on a classifier, or on an LLM call; the graph does not care. Because `results` is an
 appending channel, workers that run in the same super-step report concurrently
-without clobbering each other — that is the reducer from Step 2 earning its keep.
+without clobbering each other. That is the reducer from Step 2 earning its keep.
 
 ## 4. Everything still composes
 
 The mounted agents are ordinary graphs, so every capability from the earlier steps
 holds for the whole ensemble: one event bus streams all of it (label the LLM nodes to
 tell the speakers apart), one checkpointer persists it, and `interrupt_before` can
-gate any node — including an entire sub-agent.
+gate any node, including an entire sub-agent.
 
 ## Complete example
 
@@ -74,4 +74,4 @@ gate any node — including an entire sub-agent.
 step end to end: a supervisor, the Step 6 research agent, a math agent, streaming,
 checkpoints, and an approval pause in one run.
 
-**Next:** [Step 8 — Measure the agent](08-evaluation.md)
+**Next:** [Step 8: Measure the agent](08-evaluation.md)
