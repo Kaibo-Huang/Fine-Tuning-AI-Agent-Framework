@@ -67,7 +67,7 @@ std::shared_ptr<ToolRegistry> make_calculator_registry() {
   };
 
   auto registry = std::make_shared<ToolRegistry>();
-  const auto added = registry->add(make_tool(std::move(calculator), evaluate));
+  const auto added = registry->add(std::move(calculator), evaluate);
   if (!added) std::cout << "failed to register tool: " << added.error().to_string() << "\n";
   return registry;
 }

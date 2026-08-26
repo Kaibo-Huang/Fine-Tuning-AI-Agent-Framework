@@ -127,7 +127,7 @@ int main() {
   auto suite = need(TextToSqlSuite::create(default_text_to_sql_spec()));
 
   // Traces and eval reports persist side by side in one SQLite database.
-  auto db = std::make_shared<Db>(need(Db::open("eval_demo.sqlite")));
+  auto db = need(Db::open_shared("eval_demo.sqlite"));
   auto traces = need(TraceStore::open(db));
   auto evals = need(EvalStore::open(db));
 
