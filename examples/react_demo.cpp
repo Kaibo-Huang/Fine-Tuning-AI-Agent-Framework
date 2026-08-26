@@ -1,9 +1,9 @@
-// react_demo: a minimal ReAct agent: an LLM node and a tool node in a loop.
+// react_demo: a minimal ReAct agent in three calls. Build a tool registry,
+// make the prebuilt react graph, run it.
 //
-// The model is told to use the calculator tool for arithmetic. A conditional
-// edge hands the run to the tool node whenever the model asked for a tool and
-// ends it once the model answers in plain text; the whole conversation
-// accumulates on one appending "messages" channel.
+// The model is told to use the calculator tool for arithmetic. The graph loops
+// between the model and the tool until the model answers in plain text, and
+// the whole conversation accumulates on the shared "messages" channel.
 //
 // Offline by default (mock backend). Set AF_BACKEND=anthropic or openai in
 // .env for a live run. Walkthrough: docs/examples.md.
@@ -19,10 +19,8 @@
 #include <nlohmann/json.hpp>
 
 #include "agents_framework/core/dotenv.hpp"
-#include "agents_framework/graph/builder.hpp"
 #include "agents_framework/graph/executor.hpp"
-#include "agents_framework/graph/llm_node.hpp"
-#include "agents_framework/graph/tool_node.hpp"
+#include "agents_framework/graph/prebuilt.hpp"
 #include "agents_framework/llm/backend_factory.hpp"
 #include "agents_framework/tools/registry.hpp"
 
@@ -31,12 +29,10 @@ using namespace agents_framework::graph;
 using namespace agents_framework::llm;
 using namespace agents_framework::tools;
 using json = nlohmann::json;
+using std::string;
+using std::vector;
 
 namespace {
-
-// The agent's whole state: one conversation where every node appends messages.
-using Messages = Channel<"messages", std::vector<Message>, Append>;
-using AgentSchema = Schema<Messages>;
 
 // A five-operation calculator: a JSON-schema definition the model sees, and a
 // C++ callback the tool node runs with validated arguments.
@@ -56,8 +52,8 @@ std::shared_ptr<ToolRegistry> make_calculator_registry() {
         {"b", {{"type", "number"}}}}},
       {"required", json::array({"op", "a", "b"})}};
 
-  const auto evaluate = [](const json& args) -> Result<std::string> {
-    const auto op = args.at("op").get<std::string>();
+  const auto evaluate = [](const json& args) -> Result<string> {
+    const auto op = args.at("op").get<string>();
     const double a = args.at("a").get<double>();
     const double b = args.at("b").get<double>();
     if (op == "add") return std::to_string(a + b);
@@ -77,7 +73,7 @@ std::shared_ptr<ToolRegistry> make_calculator_registry() {
 }
 
 // Show the agent's work: every tool call and result, then the final answer.
-void print_transcript(const std::vector<Message>& messages) {
+void print_transcript(const vector<Message>& messages) {
   for (const auto& message : messages) {
     for (const auto& block : message.content) {
       if (const auto* use = std::get_if<ToolUseBlock>(&block)) {
@@ -87,45 +83,25 @@ void print_transcript(const std::vector<Message>& messages) {
       }
     }
   }
-  for (const auto& block : messages.back().content) {
-    if (const auto* text = std::get_if<TextBlock>(&block)) {
-      std::cout << "[answer] " << text->text << "\n";
-    }
-  }
+  std::cout << "[answer] " << last_assistant_text(messages) << "\n";
 }
 
-void run_agent(std::shared_ptr<LLMBackend> backend, const std::string& question) {
+void run_agent(std::shared_ptr<LLMBackend> backend, const string& question) {
   std::cout << "[user] " << question << "\n";
 
-  auto registry = make_calculator_registry();
-
-  LlmNodeOptions options;
-  options.system =
-      "You are a precise assistant. Use the calculator tool for any arithmetic instead of "
-      "computing it yourself, then answer in one short sentence.";
-  options.tools = registry->defs();
-  options.sampling.max_tokens = 512;
-
-  // Wire the loop: "agent" goes to "tools" whenever the model asked for a
-  // tool and to END otherwise; "tools" always hands control back to "agent".
-  GraphBuilder<AgentSchema> builder;
-  builder.add_node("agent", make_llm_node<AgentSchema>(std::move(backend), options))
-      .add_node("tools", make_tool_node<AgentSchema>(registry))
-      .set_entry("agent")
-      .add_conditional_edge("agent", tools_router<AgentSchema>("tools"),
-                            {"tools", std::string{kEnd}})
-      .add_edge("tools", "agent");
-  auto compiled = std::move(builder).compile();
-  if (!compiled) {
-    std::cout << "compile error: " << compiled.error().to_string() << "\n";
+  auto graph = make_react_agent(
+      std::move(backend), make_calculator_registry(),
+      {.system = "You are a precise assistant. Use the calculator tool for any arithmetic "
+                 "instead of computing it yourself, then answer in one short sentence.",
+       .sampling = {.max_tokens = 512}});
+  if (!graph) {
+    std::cout << "compile error: " << graph.error().to_string() << "\n";
     return;
   }
 
-  State<AgentSchema> state;
-  state.set<"messages">({Message::user_text(question)});
-
+  auto state = chat_state(question);
   Executor executor;
-  const auto stats = executor.run(*compiled, state, RunOptions{.max_steps = 10});
+  const auto stats = executor.run(*graph, state, {.max_steps = 10});
   if (!stats) {
     std::cout << "run error: " << stats.error().to_string() << "\n";
     return;
@@ -139,7 +115,7 @@ void run_agent(std::shared_ptr<LLMBackend> backend, const std::string& question)
 // tool's result into a sentence: the smallest possible ReAct trajectory.
 MockBackend::Handler canned_react() {
   return [](const ChatRequest& request) -> Result<ChatResponse> {
-    std::string tool_output;
+    string tool_output;
     for (const auto& message : request.messages) {
       for (const auto& block : message.content) {
         if (const auto* result = std::get_if<ToolResultBlock>(&block)) {

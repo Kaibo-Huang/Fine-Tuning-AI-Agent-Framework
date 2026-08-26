@@ -21,10 +21,9 @@
 #include <vector>
 
 #include "agents_framework/core/dotenv.hpp"
-#include "agents_framework/graph/builder.hpp"
 #include "agents_framework/graph/events.hpp"
 #include "agents_framework/graph/executor.hpp"
-#include "agents_framework/graph/llm_node.hpp"
+#include "agents_framework/graph/prebuilt.hpp"
 #include "agents_framework/graph/retrieval_node.hpp"
 #include "agents_framework/graph/subgraph_node.hpp"
 #include "agents_framework/llm/backend_factory.hpp"
@@ -38,22 +37,24 @@ using namespace agents_framework::core;
 using namespace agents_framework::graph;
 using namespace agents_framework::llm;
 using namespace agents_framework::store;
+using std::pair;
+using std::string;
+using std::vector;
 
 namespace {
 
 constexpr std::size_t kDims = 64;
 
-// The shared state, declared as typed channels. "results" appends so both
-// sub-agents can report without overwriting each other.
-using Task = Channel<"task", std::string>;
-using Query = Channel<"query", std::string>;
-using Docs = Channel<"documents", std::vector<Document>>;
-using Results = Channel<"results", std::vector<std::string>, Append>;
-using Messages = Channel<"messages", std::vector<Message>, Append>;
+// The supervisor's state, declared as typed channels. "results" appends so
+// both sub-agents can report without overwriting each other. The conversation
+// channel (Messages) and the math agent's schema (ChatSchema) come prebuilt.
+using Task = Channel<"task", string>;
+using Query = Channel<"query", string>;
+using Docs = Channel<"documents", vector<Document>>;
+using Results = Channel<"results", vector<string>, Append>;
 
 using SupervisorSchema = Schema<Task, Query, Docs, Results>;
 using ResearchSchema = Schema<Query, Docs, Messages>;
-using MathSchema = Schema<Messages>;
 
 // Unwrap a Result or abort the demo with its error.
 template <typename T>
@@ -67,9 +68,9 @@ T need(Result<T> result) {
 
 // Offline stand-ins for the two models. The researcher only answers well when
 // the retrieved context actually reached its prompt.
-MockBackend::Handler canned_reply_for(const std::string& role) {
+MockBackend::Handler canned_reply_for(const string& role) {
   return [role](const ChatRequest& request) -> Result<ChatResponse> {
-    std::string prompt;
+    string prompt;
     for (const auto& message : request.messages) {
       for (const auto& block : message.content) {
         if (const auto* text = std::get_if<TextBlock>(&block)) prompt += text->text;
@@ -77,7 +78,7 @@ MockBackend::Handler canned_reply_for(const std::string& role) {
     }
     ChatResponse response;
     if (role == "researcher") {
-      const bool grounded = prompt.find("Pregel") != std::string::npos;
+      const bool grounded = prompt.find("Pregel") != string::npos;
       response.content.push_back(TextBlock{
           grounded ? "Based on the retrieved context, the executor follows the Pregel "
                      "super-step model: nodes run in parallel and merge at a barrier."
@@ -89,25 +90,17 @@ MockBackend::Handler canned_reply_for(const std::string& role) {
   };
 }
 
-std::shared_ptr<LLMBackend> backend_for(const std::string& role) {
+std::shared_ptr<LLMBackend> backend_for(const string& role) {
   BackendOptions options;
   options.max_tokens = 512;
   options.mock_handler = canned_reply_for(role);
   return need(backend_from_env(std::move(options)));
 }
 
-std::string last_assistant_text(const std::vector<Message>& messages) {
-  std::string text;
-  for (const auto& block : messages.back().content) {
-    if (const auto* piece = std::get_if<TextBlock>(&block)) text += piece->text;
-  }
-  return text;
-}
-
 // The research sub-agent: retrieve documents, compose a prompt, answer.
 
 Update<ResearchSchema> compose_prompt(StateView<ResearchSchema> view) {
-  const std::string context = render_documents(view.get<"documents">());
+  const string context = render_documents(view.get<"documents">());
   return Update<ResearchSchema>{}.write<"messages">(
       {Message::user_text(context + "\nQuestion: " + view.get<"query">())});
 }
@@ -133,12 +126,12 @@ CompiledGraph build_research_agent(std::shared_ptr<EmbeddingBackend> embedder,
   return need(std::move(builder).compile());
 }
 
-// The math sub-agent: a single LLM node.
+// The math sub-agent: a single LLM node over the prebuilt chat schema.
 
 CompiledGraph build_math_agent(std::shared_ptr<EventBus> events) {
-  GraphBuilder<MathSchema> builder;
+  GraphBuilder<ChatSchema> builder;
   builder
-      .add_node("answer", make_llm_node<MathSchema>(
+      .add_node("answer", make_llm_node<ChatSchema>(
                               backend_for("mathematician"),
                               LlmNodeOptions{.model = "claude-haiku-4-5",
                                              .events = std::move(events),
@@ -163,13 +156,11 @@ Result<Update<SupervisorSchema>> report_research(const State<ResearchSchema>& ch
       {"research: " + last_assistant_text(child.get<"messages">())});
 }
 
-Result<State<MathSchema>> enter_math(StateView<SupervisorSchema> parent) {
-  State<MathSchema> child;
-  child.set<"messages">({Message::user_text(parent.get<"query">())});
-  return child;
+Result<State<ChatSchema>> enter_math(StateView<SupervisorSchema> parent) {
+  return chat_state(parent.get<"query">());
 }
 
-Result<Update<SupervisorSchema>> report_math(const State<MathSchema>& child) {
+Result<Update<SupervisorSchema>> report_math(const State<ChatSchema>& child) {
   return Update<SupervisorSchema>{}.write<"results">(
       {"math: " + last_assistant_text(child.get<"messages">())});
 }
@@ -179,13 +170,13 @@ Update<SupervisorSchema> start_task(StateView<SupervisorSchema> view) {
 }
 
 // Route arithmetic to the math agent and everything else to research.
-std::string pick_agent(StateView<SupervisorSchema> view) {
+string pick_agent(StateView<SupervisorSchema> view) {
   const auto& task = view.get<"task">();
-  return task.find("times") != std::string::npos ? "math_agent" : "research_agent";
+  return task.find("times") != string::npos ? "math_agent" : "research_agent";
 }
 
 Update<SupervisorSchema> write_report(StateView<SupervisorSchema> view) {
-  std::string report = "FINAL REPORT\n";
+  string report = "FINAL REPORT\n";
   for (const auto& result : view.get<"results">()) report += "  - " + result + "\n";
   return Update<SupervisorSchema>{}.write<"results">({std::move(report)});
 }
@@ -200,7 +191,7 @@ CompiledGraph build_supervisor(std::shared_ptr<EmbeddingBackend> embedder,
                 make_subgraph_node<SupervisorSchema, ResearchSchema>(
                     build_research_agent(std::move(embedder), std::move(vectors), events),
                     enter_research, report_research))
-      .add_node("math_agent", make_subgraph_node<SupervisorSchema, MathSchema>(
+      .add_node("math_agent", make_subgraph_node<SupervisorSchema, ChatSchema>(
                                   build_math_agent(events), enter_math, report_math))
       .add_node("report", write_report)
       .set_entry("supervisor")
@@ -214,7 +205,7 @@ CompiledGraph build_supervisor(std::shared_ptr<EmbeddingBackend> embedder,
 // Embed a tiny corpus into the vector store. The third entry is a decoy the
 // retrieval step should rank below the two relevant ones.
 void seed_knowledge_base(EmbeddingBackend& embedder, VectorStore& vectors) {
-  const std::vector<std::pair<std::string, std::string>> corpus{
+  const vector<pair<string, string>> corpus{
       {"executor", "The graph executor follows the Pregel super-step model: active nodes run "
                    "in parallel and their outputs merge at a deterministic barrier."},
       {"tools", "Tools are registered with JSON-schema definitions and validated arguments."},

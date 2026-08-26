@@ -22,6 +22,8 @@
 using namespace agents_framework::core;
 using namespace agents_framework::llm;
 using json = nlohmann::json;
+using std::string;
+using std::string_view;
 
 namespace {
 
@@ -47,7 +49,7 @@ void stream_a_reply(LLMBackend& backend) {
 
   std::cout << "[stream] ";
   const auto reply = backend.generate_stream(
-      request, on_text([](std::string_view text) { std::cout << text << std::flush; }));
+      request, on_text([](string_view text) { std::cout << text << std::flush; }));
   std::cout << "\n";
   if (!reply) std::cout << "[stream] error: " << reply.error().to_string() << "\n";
 }
@@ -98,7 +100,7 @@ void call_a_tool(LLMBackend& backend) {
 // an API key and always prints the same conversation.
 MockBackend::Handler canned_replies() {
   return [](const ChatRequest& request) -> Result<ChatResponse> {
-    std::string prompt;
+    string prompt;
     bool answered_tool = false;
     for (const auto& message : request.messages) {
       for (const auto& block : message.content) {
@@ -117,7 +119,7 @@ MockBackend::Handler canned_replies() {
       response.stop_reason = StopReason::ToolUse;
     } else if (answered_tool) {
       response.content.push_back(TextBlock{"It is 18C and sunny in Waterloo."});
-    } else if (prompt.find("Count") != std::string::npos) {
+    } else if (prompt.find("Count") != string::npos) {
       response.content.push_back(TextBlock{"1 2 3 4 5"});
     } else {
       response.content.push_back(

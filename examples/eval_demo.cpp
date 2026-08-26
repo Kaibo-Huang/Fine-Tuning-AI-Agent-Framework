@@ -29,6 +29,7 @@ using namespace agents_framework::eval;
 using namespace agents_framework::llm;
 using namespace agents_framework::store;
 using namespace agents_framework::trace;
+using std::string;
 
 namespace {
 
@@ -55,7 +56,7 @@ void need(Result<void> result) {
 // "big-spenders" refuses to answer at all.
 AgentFn scripted_agent() {
   return [](const TaskInstance& instance) -> Result<AgentOutput> {
-    std::string sql = instance.expected.at("gold_sql").get<std::string>();
+    string sql = instance.expected.at("gold_sql").get<string>();
     if (instance.id == "older-than-30") sql = "SELECT COUNT(*) FROM customers WHERE age >= 30";
     if (instance.id == "big-spenders") sql = "I am not sure how to write that query.";
 
@@ -65,7 +66,7 @@ AgentFn scripted_agent() {
     Trace trace;
     trace.run_id = "demo-" + instance.id;
     trace.transcript = {
-        Message::user_text(instance.input.value("question", std::string{})),
+        Message::user_text(instance.input.value("question", string{})),
         Message::assistant_text(sql),
     };
     output.trace = std::move(trace);
@@ -75,7 +76,7 @@ AgentFn scripted_agent() {
 
 // The same agent backed by a real model: one system prompt describing the
 // schema, temperature 0, exactly one SQL query back.
-AgentFn llm_agent(std::shared_ptr<LLMBackend> backend, std::string model) {
+AgentFn llm_agent(std::shared_ptr<LLMBackend> backend, string model) {
   return [backend = std::move(backend),
           model = std::move(model)](const TaskInstance& instance) -> Result<AgentOutput> {
     ChatRequest request;
@@ -86,7 +87,7 @@ AgentFn llm_agent(std::shared_ptr<LLMBackend> backend, std::string model) {
         "orders(id, customer_id, total, status)  -- status: completed|pending|refunded\n"
         "Reply with exactly one SQL query and nothing else.";
     request.messages.push_back(
-        Message::user_text(instance.input.value("question", std::string{})));
+        Message::user_text(instance.input.value("question", string{})));
     request.sampling.temperature = 0.0;
     AF_TRY(const auto response, backend->generate(request));
 
