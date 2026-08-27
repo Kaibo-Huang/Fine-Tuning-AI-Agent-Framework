@@ -2,7 +2,7 @@
 
 The reference view: modules, the execution model, and the conventions the code
 follows. New here? Start with the [guide](guide/README.md). Where the training
-features are headed is in the [README's roadmap](../README.md#roadmap).
+features are headed is in the [README's Incoming Features](../README.md#incoming-features).
 
 ## The big picture
 

@@ -42,5 +42,5 @@ using namespace agents_framework::store;  // Db, CheckpointStore, VectorStore, .
 - [Architecture](../architecture.md): the reference view. Modules, the execution
   model, and conventions.
 - [Examples walkthrough](../examples.md): what each demo in `examples/` shows.
-- The [README's roadmap](../../README.md#roadmap): where the training features are
+- The [README's Incoming Features](../../README.md#incoming-features): where the training features are
   headed.

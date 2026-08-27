@@ -108,4 +108,4 @@ near-miss that string comparison would have accepted.
 
 **You're done.** For the reference view of everything the guide touched, read
 [Architecture](../architecture.md); for where the project goes next, read the
-[README's roadmap](../../README.md#roadmap).
+[README's Incoming Features](../../README.md#incoming-features).
