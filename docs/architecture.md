@@ -5,7 +5,7 @@ modules, the execution model, and the conventions the code follows. If you are n
 start with the step-by-step guide, [Orchestrating Agents, Step by
 Step](guide/README.md), and come back here for the full picture. The forward-looking
 design, including the training pipeline and the `finetune` / `distill` / `port`
-features, lives in [PLAN.md](../PLAN.md).
+features, is summarized in the README's roadmap section.
 
 ## The big picture
 
@@ -137,5 +137,4 @@ src/                        implementation, mirroring include/
 examples/                   four runnable demos (see docs/examples.md)
 tests/                      Catch2 suite, deterministic and offline by default
 docs/                       this documentation
-PLAN.md                     the full design document: scope, build order, acceptance criteria
 ```

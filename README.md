@@ -59,8 +59,7 @@ hot-swaps or rolls back the result.
 
 Phases 0 through 3 (the orchestration engine and the measurement stack) are complete.
 Phase 4 is the current focus: LibTorch inference, `safetensors` weight loading, LoRA,
-and local plus remote training runners. The three verbs land in Phases 5 and 6. The
-full design, build order, and acceptance criteria live in [PLAN.md](PLAN.md).
+and local plus remote training runners. The three verbs land in Phases 5 and 6.
 
 ## Documentation
 
@@ -72,8 +71,6 @@ full design, build order, and acceptance criteria live in [PLAN.md](PLAN.md).
   the conventions the code follows.
 - **[Examples walkthrough](docs/examples.md)**: what each demo shows, what to look at
   in the code, and how to point it at a live provider.
-- **[PLAN.md](PLAN.md)**: the full design document, with scope, build order, and
-  acceptance criteria for every phase.
 
 ## Quick start
 
