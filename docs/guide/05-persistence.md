@@ -7,7 +7,7 @@ replaying its history, and pausing for human approval.
 ## 1. Open a store
 
 ```cpp
-auto db = std::make_shared<Db>(*Db::open("agent.sqlite"));  // or Db::open_memory()
+auto db = *Db::open_shared("agent.sqlite");  // or Db::open_memory_shared()
 auto checkpoints = *CheckpointStore::open(db);
 ```
 

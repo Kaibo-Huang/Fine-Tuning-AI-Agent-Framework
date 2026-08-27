@@ -4,88 +4,69 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![C++23](https://img.shields.io/badge/C%2B%2B-23-informational)
 
-A C++23 framework for **creating, orchestrating, and fine-tuning AI agents**: think
-LangChain + LangGraph, but as a native systems library with direct control over
-scheduling, state, persistence, and (soon) the training stack itself.
+A C++23 framework for creating, orchestrating, and fine-tuning AI agents. Think
+LangChain + LangGraph as a native systems library, with the training stack in the
+same process.
 
-The core idea: **use better LLMs to train worse ones.** A model cannot train itself;
-supervision has to come from something stronger. The framework is built around three
-transfers, each moving capability from a stronger source into a small, cheap artifact:
+The core idea: **use better LLMs to train worse ones.** A model cannot train itself,
+so every transfer moves capability from something stronger into a small, cheap
+artifact:
 
 | Verb | The transfer |
 |---|---|
-| `finetune` | from a curated dataset into a LoRA adapter |
-| `distill` | from a better model, or an entire expensive multi-node graph, into one small fast model |
-| `port` | from an old base model onto a new one, by refitting a thin alignment layer instead of retraining (a C++ port of [portallib](https://github.com/ramp-public/portallib)) |
+| `finetune` | a curated dataset becomes a LoRA adapter |
+| `distill` | a better model, or an entire multi-node graph, teaches one small fast model |
+| `port` | an existing adaptation moves to a new base model via a thin alignment refit (a C++ port of [portallib](https://github.com/ramp-public/portallib)) |
 
-The orchestration engine exists to make those transfers cheap and measurable. It runs
-the teacher graphs that generate training data, the eval harness that scores a student
-against a recorded baseline with confidence intervals, and the adapter lifecycle that
-hot-swaps or rolls back the result.
+The orchestration engine makes those transfers cheap and measurable: teacher graphs
+generate the data, the eval harness scores students against recorded baselines with
+confidence intervals, and adapters hot-swap or roll back.
 
 ## What works today
 
-- **LLM backend abstraction**: one canonical request/response/tool-call format over
-  the **Anthropic Messages API**, any **OpenAI-compatible** server (OpenAI, OpenRouter,
-  vLLM, llama.cpp), and a deterministic **mock backend** for offline development and CI.
-  Blocking and token-streaming paths, native function calling with a tolerant
-  text-protocol fallback.
-- **Typed state graphs**: shared state is a compile-time schema of named channels with
-  reducers (`Channel<"messages", std::vector<Message>, Append>`). No codegen, no
-  hot-path type lookups.
-- **Deterministic concurrent execution**: a Pregel-style super-step scheduler. Active
-  nodes run in parallel on a thread pool and their outputs merge at a barrier in a
-  deterministic order. Conditional edges, cycles with step budgets, and reproducible
-  runs given the same inputs and seeds.
-- **Persistence and time travel**: every super-step checkpoints to embedded SQLite.
-  Resume, replay, fork any past step, and pause for human approval
-  (`interrupt_before`) with the run resuming from the stored checkpoint.
-- **Tools**: native C++, subprocess, and HTTP tools behind one JSON-schema registry
-  with argument validation.
-- **Memory and RAG**: an `EmbeddingBackend` seam, a SQLite-backed vector store, and a
-  retrieval node type.
-- **Multi-agent**: agents are graphs, so an agent mounts inside another as a subgraph
-  node with typed state translation in and out. Supervisor and hand-off patterns are
-  just edges.
-- **Traces, datasets, and evaluation**: structured trace capture into SQLite, a
-  `TaskSuite` seam for pluggable domains, built-in verifiers (exact match, numeric
-  tolerance, result-set comparison, subprocess exit code, LLM-judge), and an eval
-  harness that fans an agent across a suite concurrently and reports
-  **accuracy with a 95% confidence interval**, pinned to the model, seed, framework
-  version, and commit that produced it. Verified teacher traces export directly as
-  JSONL training data for a student model.
+- **LLM backends**: Anthropic, any OpenAI-compatible server (OpenAI, OpenRouter,
+  vLLM, llama.cpp), and a deterministic offline mock, all behind one canonical
+  format. Streaming, native tool calling, and a text-protocol fallback.
+- **Typed state graphs**: compile-time channel schemas with reducers. No codegen, no
+  hot-path lookups.
+- **Deterministic concurrency**: a Pregel-style super-step scheduler. Parallel nodes,
+  deterministic merges, reproducible runs.
+- **Persistence**: every step checkpoints to SQLite. Resume, replay, fork any past
+  step, pause for human approval.
+- **Tools**: native C++, subprocess, and HTTP tools behind one JSON-schema registry.
+- **Memory and RAG**: pluggable embeddings, a SQLite vector store, a retrieval node.
+- **Multi-agent**: agents are graphs; mount one inside another with typed state
+  translation.
+- **Measurement**: task suites, verifiers, and an eval harness reporting accuracy
+  with 95% confidence intervals, pinned for reproducibility. Verified teacher traces
+  export as JSONL training data.
 
 ## Incoming Features
 
-The orchestration engine and the measurement stack are complete. What's to come, in
-order:
+The orchestration engine and the measurement stack are done. Next, in order:
 
-1. **The training pipeline**: LibTorch inference, `safetensors` weight loading, LoRA,
-   and local plus remote training runners. This is the current focus.
-2. **`finetune` and `distill`**: LoRA SFT on curated datasets, then teacher-to-student
-   and whole-graph distillation, each gated by the eval harness against a recorded
-   baseline.
-3. **`port`**: task latents and the hypernetwork stack, so an adaptation learned once
-   moves to each new base model with a cheap alignment refit.
+1. **The training pipeline**: LibTorch inference, `safetensors` loading, LoRA, local
+   and remote training runners.
+2. **`finetune` and `distill`**, gated by the eval harness against recorded
+   baselines.
+3. **`port`**: task latents and the hypernetwork stack.
 
 ## Documentation
 
-- **[Orchestrating Agents, Step by Step](docs/guide/README.md)**: the guide. Start
-  from a raw model call and build up through graphs, tools, streaming, checkpoints,
-  retrieval, multi-agent composition, and evaluation, one step at a time.
-- **[Architecture](docs/architecture.md)**: the reference view. Modules, the
-  typed-channel state model, the deterministic super-step executor, persistence, and
-  the conventions the code follows.
-- **[Examples walkthrough](docs/examples.md)**: what each demo shows, what to look at
-  in the code, and how to point it at a live provider.
+- **[Orchestrating Agents, Step by Step](docs/guide/README.md)**: the guide, from a
+  raw model call to a measured multi-agent system.
+- **[Architecture](docs/architecture.md)**: modules, the execution model, and
+  conventions.
+- **[Examples walkthrough](docs/examples.md)**: what each demo shows and how to run
+  it live.
 
 ## Quick start
 
 ### Prerequisites
 
 - CMake 3.23 or newer
-- [vcpkg](https://github.com/microsoft/vcpkg), with the `VCPKG_ROOT` environment
-  variable pointing at it (dependencies install automatically on first configure)
+- [vcpkg](https://github.com/microsoft/vcpkg), with `VCPKG_ROOT` set (dependencies
+  install automatically on first configure)
 - Windows: Visual Studio 2022 (MSVC x64). Linux: GCC 13+ or Clang 17+, and Ninja.
 
 ### Build and test
@@ -104,25 +85,20 @@ ctest --preset linux
 
 ### Run the examples
 
-Every example runs fully offline against the mock backend by default, no API key
-needed. Binaries land in `build/windows-msvc/examples/Debug/` (Windows) or
-`build/linux/examples/` (Linux). Each one is walked through in detail in
-[docs/examples.md](docs/examples.md).
+Every example runs fully offline against the mock backend; no API key needed.
+Binaries land in `build/windows-msvc/examples/Debug/` (Windows) or
+`build/linux/examples/` (Linux). Details in [docs/examples.md](docs/examples.md).
 
 | Example | What it shows |
 |---|---|
-| `chat_demo` | the backend abstraction: a reply, a token stream, and a full tool round-trip |
-| `react_demo` | a minimal ReAct agent, an LLM node and a tool node routed in a loop |
-| `orchestration_demo` | a supervisor delegating to subgraph agents, with RAG retrieval, event streaming, SQLite checkpoints, and a human-in-the-loop pause and resume |
-| `eval_demo` | the measurement stack: a text-to-SQL task suite scored with confidence intervals, baseline recording, and verified traces exported as training data |
-
-To point the same code at a live provider, create a `.env` file (or set the
-environment) as described below.
+| `chat_demo` | the backend abstraction: a reply, a token stream, a tool round-trip |
+| `react_demo` | a ReAct agent from the prebuilt graph, three calls end to end |
+| `orchestration_demo` | a supervisor with subgraph agents, RAG, streaming, checkpoints, and a human-in-the-loop pause |
+| `eval_demo` | a task suite scored with confidence intervals, a recorded baseline, traces exported as training data |
 
 ## A taste of the API
 
-The whole ReAct agent from `react_demo`. Prebuilt patterns are one call, and the
-`Executor` runs them like any other graph:
+The whole ReAct agent from `react_demo`:
 
 ```cpp
 auto graph = make_react_agent(backend, registry,
@@ -136,40 +112,38 @@ auto stats = executor.run(*graph, state, {.max_steps = 10});
 std::cout << last_assistant_text(state.get<"messages">()) << "\n";
 ```
 
-Under the hood that is an ordinary typed graph: two nodes, a conditional edge, and
-an appending messages channel. Custom agents use the same `GraphBuilder` the
-prebuilt uses; the [guide](docs/guide/README.md) builds this exact loop by hand.
+Under the hood that is an ordinary typed graph: two nodes, a conditional edge, an
+appending messages channel. Custom agents use the same `GraphBuilder` the prebuilt
+uses; the [guide](docs/guide/README.md) builds this exact loop by hand.
 
-Recoverable failures return `Result<T>` (`std::expected<T, Error>`) throughout;
-exceptions are reserved for broken invariants.
+Recoverable failures return `Result<T>` (`std::expected<T, Error>`); exceptions are
+reserved for broken invariants.
 
 ## Configuration
 
-Configuration is environment-driven. A `.env` file in the working directory is loaded
-automatically and never overrides variables already set in the environment.
+Environment-driven. A `.env` file in the working directory is loaded automatically
+and never overrides real environment variables. Secrets are redacted from logs.
 
 | Variable | Values | Meaning |
 |---|---|---|
 | `AF_BACKEND` | `mock` (default), `anthropic`, `openai` | which backend to use |
 | `AF_MODEL` | a model id | override the backend's default model |
-| `AF_BASE_URL` | a URL | point the OpenAI-compatible backend at OpenRouter, vLLM, llama.cpp, and similar servers |
+| `AF_BASE_URL` | a URL | point the OpenAI-compatible backend at OpenRouter, vLLM, llama.cpp |
 | `ANTHROPIC_API_KEY` | key | required for `AF_BACKEND=anthropic` |
 | `OPENAI_API_KEY` | key | required for `AF_BACKEND=openai` |
 
-Secrets are redacted from logs and error messages.
-
 ## Testing
 
-`ctest` runs the full offline suite; provider backends are exercised through the mock,
-so no network or API key is ever required. Live round-trip tests exist but are hidden
-behind the `[live]` tag and skip themselves unless a backend is configured:
+`ctest` runs the full suite offline; providers are exercised through the mock, so no
+key or network is required. Live round-trip tests hide behind the `[live]` tag and
+skip themselves unless a backend is configured:
 
 ```bash
 AF_BACKEND=openai build/linux/tests/agents_framework_tests "[live]"
 ```
 
-CI builds and tests every push on Windows (MSVC) and Linux (GCC). The live tests are
-an opt-in toggle on the workflow's manual dispatch.
+CI builds and tests every push on Windows (MSVC) and Linux (GCC); the live tests are
+an opt-in toggle on manual dispatch.
 
 ## License
 

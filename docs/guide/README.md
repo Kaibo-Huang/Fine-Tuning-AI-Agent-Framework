@@ -1,13 +1,12 @@
 # Orchestrating Agents, Step by Step
 
-This guide builds an agent from nothing: first a raw model call, then a graph, then
-tools, streaming, persistence, retrieval, multiple agents, and finally measurement.
-Each step is self-contained, builds on the one before it, and ends with a pointer to
-a complete, runnable example in `examples/`.
+This guide builds an agent from nothing: a raw model call, then a graph, tools,
+streaming, persistence, retrieval, multiple agents, and finally measurement. Each
+step builds on the last and ends with a runnable example in `examples/`.
 
-Before starting, build the project once (see the [README](../../README.md#quick-start)).
-Every snippet runs offline against the mock backend by default, no API key needed,
-and the code is identical for a live provider.
+Build the project first (see the [README](../../README.md#quick-start)). Every
+snippet runs offline against the mock backend, no API key needed, and the code is
+identical for a live provider.
 
 To keep the snippets readable, they assume the same using-directives the examples use:
 

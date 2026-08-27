@@ -1,18 +1,13 @@
 # Examples
 
-Four runnable demos live in `examples/`, in increasing order of scope. They are the
-finished form of what the step-by-step guide builds up,
-[Orchestrating Agents, Step by Step](guide/README.md), so read the guide to learn
-the concepts and these walkthroughs to see them assembled.
+Four demos in `examples/`, in increasing order of scope. The
+[guide](guide/README.md) teaches the concepts; these walkthroughs show them
+assembled. Every demo runs fully offline against the mock backend and switches to a
+live provider through the environment alone (see the
+[configuration table](../README.md#configuration)).
 
-Every demo runs fully offline against the deterministic mock backend by default (no
-API key, no network) and switches to a live provider through the environment alone;
-see the [configuration table](../README.md#configuration) in the README.
-
-After building, the binaries land in:
-
-- Windows: `build/windows-msvc/examples/Debug/`
-- Linux: `build/linux/examples/`
+Binaries land in `build/windows-msvc/examples/Debug/` (Windows) or
+`build/linux/examples/` (Linux).
 
 ## chat_demo: the backend abstraction
 

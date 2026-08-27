@@ -1,31 +1,22 @@
 # Architecture
 
-This document is the reference view of the framework as it exists today: the
-modules, the execution model, and the conventions the code follows. If you are new,
-start with the step-by-step guide, [Orchestrating Agents, Step by
-Step](guide/README.md), and come back here for the full picture. The forward-looking
-design, including the training pipeline and the `finetune` / `distill` / `port`
-features, is summarized in the README's roadmap section.
+The reference view: modules, the execution model, and the conventions the code
+follows. New here? Start with the [guide](guide/README.md). Where the training
+features are headed is in the [README's roadmap](../README.md#roadmap).
 
 ## The big picture
 
-The framework is organized as three tracks:
+Three tracks:
 
-1. **The orchestration engine** (primary product). LLMs are embedded in structured,
-   stateful execution graphs that coordinate reasoning steps, tool calls, memory, and
-   multi-agent collaboration.
-2. **The measurement stack** (the bridge). Every run can be captured as a structured
-   trace, scored by a pluggable evaluator, aggregated by an eval harness with
-   confidence intervals, and exported as training data.
-3. **The training pipeline** (upcoming). LibTorch-based local inference and LoRA
-   training behind three features: `finetune` (a curated dataset becomes an adapter),
-   `distill` (a better model or an entire graph teaches a smaller one), and `port`
-   (an existing task adaptation moves to a new base model).
+1. **The orchestration engine**: LLMs inside structured, stateful execution graphs
+   that coordinate reasoning, tool calls, memory, and multi-agent collaboration.
+2. **The measurement stack**: trace capture, pluggable evaluators, an eval harness
+   with confidence intervals, and dataset export.
+3. **The training pipeline** (upcoming): LibTorch inference and LoRA training behind
+   `finetune`, `distill`, and `port`.
 
-One rule spans all three tracks: **a model is never trained on its own outputs.**
+One rule spans all three: **a model is never trained on its own outputs.**
 Supervision comes from a stronger model, gold labels, or a programmatic verifier.
-The measurement stack exists to generate teacher datasets and to judge students
-against baselines, not to close a self-improvement loop.
 
 Tracks 1 and 2 are complete; track 3 is the current focus.
 

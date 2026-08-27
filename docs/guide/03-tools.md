@@ -36,7 +36,7 @@ result, and the model gets a chance to recover.
 
 ```cpp
 auto registry = std::make_shared<ToolRegistry>();
-(void)registry->add(make_tool(std::move(calculator), evaluate));
+(void)registry->add(std::move(calculator), evaluate);
 ```
 
 The registry is shared by two consumers: the LLM node advertises its definitions to
