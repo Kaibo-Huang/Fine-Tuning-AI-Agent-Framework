@@ -1,4 +1,4 @@
-// chat_demo — the LLM backend abstraction in three short scenes:
+// chat_demo: the LLM backend abstraction in three short scenes:
 //
 //   1. ask a one-off question and print the reply
 //   2. stream a reply token by token
@@ -153,7 +153,7 @@ int main() {
   }
   LLMBackend& backend = **opened;
 
-  std::cout << "=== chat demo — " << selection->describe() << " ===\n";
+  std::cout << "=== chat demo: " << selection->describe() << " ===\n";
   ask_a_question(backend);
   stream_a_reply(backend);
   call_a_tool(backend);

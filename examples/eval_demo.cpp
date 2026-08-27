@@ -1,8 +1,9 @@
-// eval_demo — the measurement stack end to end: run an agent over the built-in
+// eval_demo: the measurement stack end to end. Run an agent over the built-in
 // text-to-SQL task suite, score it with the eval harness, record the run as the
-// suite's baseline, and export the verified traces as a training dataset.
+// suite's baseline, and export the verified traces as a training dataset for
+// distilling a smaller student model.
 //
-// Offline, a scripted agent plays the model — with two deliberate mistakes, so
+// Offline, a scripted agent plays the model, with two deliberate mistakes so
 // the report shows real failures (one wrong comparison operator that only a
 // result-set verifier catches, and one refusal). Set AF_BACKEND in .env to
 // score a live model instead. Walkthrough: docs/examples.md.
@@ -157,7 +158,8 @@ int main() {
   need(evals.set_baseline(report.eval_id));
   std::printf("\nrecorded as the baseline for '%s'\n", report.suite.c_str());
 
-  // The traces whose SQL actually verified become training data.
+  // The traces whose SQL actually verified become the training data a smaller
+  // student model would be distilled on.
   TraceQuery query;
   query.suite = report.suite;
   query.verified = true;

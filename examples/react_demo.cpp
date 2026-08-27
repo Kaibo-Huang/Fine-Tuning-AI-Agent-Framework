@@ -1,4 +1,4 @@
-// react_demo — a minimal ReAct agent: an LLM node and a tool node in a loop.
+// react_demo: a minimal ReAct agent: an LLM node and a tool node in a loop.
 //
 // The model is told to use the calculator tool for arithmetic. A conditional
 // edge hands the run to the tool node whenever the model asked for a tool and
@@ -136,7 +136,7 @@ void run_agent(std::shared_ptr<LLMBackend> backend, const std::string& question)
 }
 
 // Offline stand-in for the model: ask for the calculator once, then turn the
-// tool's result into a sentence — the smallest possible ReAct trajectory.
+// tool's result into a sentence: the smallest possible ReAct trajectory.
 MockBackend::Handler canned_react() {
   return [](const ChatRequest& request) -> Result<ChatResponse> {
     std::string tool_output;
@@ -184,7 +184,7 @@ int main() {
     return 1;
   }
 
-  std::cout << "=== react demo — " << selection->describe() << " ===\n";
+  std::cout << "=== react demo: " << selection->describe() << " ===\n";
   run_agent(std::move(*backend), "What is 987654321 times 123456789?");
   return 0;
 }

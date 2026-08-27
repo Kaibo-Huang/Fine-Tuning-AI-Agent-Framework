@@ -1,4 +1,4 @@
-// orchestration_demo — a supervisor that delegates to two sub-agents, with
+// orchestration_demo: a supervisor that delegates to two sub-agents, with
 // retrieval, streaming events, SQLite checkpoints, and a human-in-the-loop
 // pause, all in one run.
 //
@@ -251,7 +251,7 @@ int main() {
   }
   std::cout << "[backend] " << need(select_backend()).describe() << "\n";
 
-  // Everything persistent — vectors and checkpoints — shares one SQLite db.
+  // Everything persistent (vectors and checkpoints) shares one SQLite db.
   auto db = std::make_shared<Db>(need(Db::open_memory()));
   auto embedder = std::make_shared<MockEmbeddingBackend>(kDims);
   auto vectors = std::make_shared<VectorStore>(need(VectorStore::open(db, "knowledge", kDims)));
