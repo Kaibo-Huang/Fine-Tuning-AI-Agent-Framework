@@ -2,18 +2,15 @@
 // retrieval, streaming events, SQLite checkpoints, and a human-in-the-loop
 // pause, all in one run.
 //
-// The supervisor graph:
-//
-//     supervisor ──┬─▶ research_agent (retrieve ▶ compose ▶ answer) ──┬─▶ report
-//                  └─▶ math_agent     (answer)                        ──┘
-//
-// Each sub-agent is a complete graph of its own, mounted as a single node.
-// The run checkpoints to SQLite after every super-step and is configured to
-// interrupt before "report"; the demo then reloads the latest checkpoint and
-// resumes, exactly as a human-approval flow would.
+// The supervisor routes each task to a research agent (retrieve documents,
+// compose a prompt, answer) or a math agent, then merges their results into a
+// final report. Each sub-agent is a complete graph of its own, mounted as a
+// single node. The run checkpoints to SQLite after every super-step and is
+// configured to interrupt before "report"; the demo then reloads the latest
+// checkpoint and resumes, exactly as a human-approval flow would.
 //
 // Offline by default (mock backend + mock embeddings). Set AF_BACKEND in .env
-// for a live run.
+// for a live run. Walkthrough: docs/examples.md.
 
 #include <cstdlib>
 #include <iostream>
@@ -107,7 +104,7 @@ std::string last_assistant_text(const std::vector<Message>& messages) {
   return text;
 }
 
-// ---- the research sub-agent: retrieve, compose a prompt, answer -----------
+// The research sub-agent: retrieve documents, compose a prompt, answer.
 
 Update<ResearchSchema> compose_prompt(StateView<ResearchSchema> view) {
   const std::string context = render_documents(view.get<"documents">());
@@ -136,7 +133,7 @@ CompiledGraph build_research_agent(std::shared_ptr<EmbeddingBackend> embedder,
   return need(std::move(builder).compile());
 }
 
-// ---- the math sub-agent: a single LLM node --------------------------------
+// The math sub-agent: a single LLM node.
 
 CompiledGraph build_math_agent(std::shared_ptr<EventBus> events) {
   GraphBuilder<MathSchema> builder;
@@ -150,8 +147,6 @@ CompiledGraph build_math_agent(std::shared_ptr<EventBus> events) {
       .set_finish("answer");
   return need(std::move(builder).compile());
 }
-
-// ---- the supervisor graph -------------------------------------------------
 
 // The supervisor and its sub-agents have different schemas; each sub-agent
 // gets an enter function (parent state -> child state) and a report function
@@ -215,8 +210,6 @@ CompiledGraph build_supervisor(std::shared_ptr<EmbeddingBackend> embedder,
       .set_finish("report");
   return need(std::move(builder).compile());
 }
-
-// ---- setup ----------------------------------------------------------------
 
 // Embed a tiny corpus into the vector store. The third entry is a decoy the
 // retrieval step should rank below the two relevant ones.

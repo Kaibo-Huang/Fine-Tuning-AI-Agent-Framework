@@ -1,15 +1,12 @@
 // react_demo — a minimal ReAct agent: an LLM node and a tool node in a loop.
 //
-// The graph:
-//
-//     agent ──(asked for a tool?)──▶ tools ──▶ agent ──▶ ... ──▶ END
-//
-// The model is told to use the calculator tool for arithmetic. The executor
-// routes between the two nodes until the model answers in plain text, and the
-// whole conversation accumulates on one appending "messages" channel.
+// The model is told to use the calculator tool for arithmetic. A conditional
+// edge hands the run to the tool node whenever the model asked for a tool and
+// ends it once the model answers in plain text; the whole conversation
+// accumulates on one appending "messages" channel.
 //
 // Offline by default (mock backend). Set AF_BACKEND=anthropic or openai in
-// .env for a live run.
+// .env for a live run. Walkthrough: docs/examples.md.
 
 #include <cmath>
 #include <iostream>

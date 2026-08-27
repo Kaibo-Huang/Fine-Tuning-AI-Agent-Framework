@@ -7,6 +7,7 @@
 // By default this runs fully offline against the built-in mock backend. Set
 // AF_BACKEND=anthropic or AF_BACKEND=openai (plus the matching API key) in the
 // environment or a .env file to run the exact same code against a live model.
+// Walkthrough: docs/examples.md.
 
 #include <iostream>
 #include <string>

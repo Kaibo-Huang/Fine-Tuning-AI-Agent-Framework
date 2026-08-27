@@ -5,7 +5,7 @@
 // Offline, a scripted agent plays the model — with two deliberate mistakes, so
 // the report shows real failures (one wrong comparison operator that only a
 // result-set verifier catches, and one refusal). Set AF_BACKEND in .env to
-// score a live model instead.
+// score a live model instead. Walkthrough: docs/examples.md.
 
 #include <cstdio>
 #include <cstdlib>
