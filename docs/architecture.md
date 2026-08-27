@@ -1,9 +1,11 @@
 # Architecture
 
-This document is a tour of the framework as it exists today: the modules, the
-execution model, and the conventions the code follows. The forward-looking design —
-the training pipeline and the `finetune` / `distill` / `port` features — lives in
-[PLAN.md](../PLAN.md).
+This document is the reference view of the framework as it exists today: the
+modules, the execution model, and the conventions the code follows. If you are new,
+start with the step-by-step guide — [Orchestrating Agents, Step by
+Step](guide/README.md) — and come back here for the full picture. The
+forward-looking design — the training pipeline and the `finetune` / `distill` /
+`port` features — lives in [PLAN.md](../PLAN.md).
 
 ## The big picture
 

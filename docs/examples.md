@@ -1,6 +1,9 @@
 # Examples
 
-Four runnable demos live in `examples/`, in increasing order of scope. Every one runs
+Four runnable demos live in `examples/`, in increasing order of scope. They are the
+finished form of what the step-by-step guide builds up —
+[Orchestrating Agents, Step by Step](guide/README.md) — so read the guide to learn
+the concepts and these walkthroughs to see them assembled. Every one runs
 fully offline against the deterministic mock backend by default — no API key, no
 network — and switches to a live provider through the environment alone (see the
 [configuration table](../README.md#configuration) in the README).

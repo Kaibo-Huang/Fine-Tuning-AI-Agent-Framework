@@ -59,9 +59,12 @@ training runners) is the current focus.
 
 ## Documentation
 
-- **[Architecture](docs/architecture.md)** — a tour of the modules, the typed-channel
-  state model, the deterministic super-step executor, persistence and replay, and the
-  conventions the code follows
+- **[Orchestrating Agents, Step by Step](docs/guide/README.md)** — the guide: start
+  from a raw model call and build up through graphs, tools, streaming, checkpoints,
+  retrieval, multi-agent composition, and evaluation, one step at a time
+- **[Architecture](docs/architecture.md)** — the reference view: modules, the
+  typed-channel state model, the deterministic super-step executor, persistence, and
+  the conventions the code follows
 - **[Examples walkthrough](docs/examples.md)** — what each demo shows, what to look at
   in the code, and how to point it at a live provider
 - **[PLAN.md](PLAN.md)** — the full design document: scope, build order, and
