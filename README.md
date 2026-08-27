@@ -12,11 +12,11 @@ The core idea: **use better LLMs to train worse ones.** A model cannot train its
 supervision has to come from something stronger. The framework is built around three
 transfers, each moving capability from a stronger source into a small, cheap artifact:
 
-| Verb | The transfer | Status |
-|---|---|---|
-| `finetune` | from a curated dataset into a LoRA adapter | planned (Phase 5) |
-| `distill` | from a better model, or an entire expensive multi-node graph, into one small fast model | planned (Phase 5) |
-| `port` | from an old base model onto a new one, by refitting a thin alignment layer instead of retraining (a C++ port of [portallib](https://github.com/ramp-public/portallib)) | planned (Phase 6) |
+| Verb | The transfer |
+|---|---|
+| `finetune` | from a curated dataset into a LoRA adapter |
+| `distill` | from a better model, or an entire expensive multi-node graph, into one small fast model |
+| `port` | from an old base model onto a new one, by refitting a thin alignment layer instead of retraining (a C++ port of [portallib](https://github.com/ramp-public/portallib)) |
 
 The orchestration engine exists to make those transfers cheap and measurable. It runs
 the teacher graphs that generate training data, the eval harness that scores a student
@@ -57,9 +57,16 @@ hot-swaps or rolls back the result.
 
 ## Roadmap
 
-Phases 0 through 3 (the orchestration engine and the measurement stack) are complete.
-Phase 4 is the current focus: LibTorch inference, `safetensors` weight loading, LoRA,
-and local plus remote training runners. The three verbs land in Phases 5 and 6.
+The orchestration engine and the measurement stack are complete. What's to come, in
+order:
+
+1. **The training pipeline**: LibTorch inference, `safetensors` weight loading, LoRA,
+   and local plus remote training runners. This is the current focus.
+2. **`finetune` and `distill`**: LoRA SFT on curated datasets, then teacher-to-student
+   and whole-graph distillation, each gated by the eval harness against a recorded
+   baseline.
+3. **`port`**: task latents and the hypernetwork stack, so an adaptation learned once
+   moves to each new base model with a cheap alignment refit.
 
 ## Documentation
 
