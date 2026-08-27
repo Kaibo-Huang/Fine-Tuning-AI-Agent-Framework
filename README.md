@@ -55,8 +55,17 @@ The training stack lands next, as three verbs a graph can call:
 | `port` | carry a task adaptation onto a **new base model** from a small calibration set, instead of retraining from scratch (a C++ port of [portallib](https://github.com/ramp-public/portallib)) | planned (Phase 6) |
 
 Phase 4 (LibTorch inference, `safetensors` weight loading, LoRA, local + remote
-training runners) is the current focus. The full design, build order, and acceptance
-criteria live in [PLAN.md](PLAN.md).
+training runners) is the current focus.
+
+## Documentation
+
+- **[Architecture](docs/architecture.md)** — a tour of the modules, the typed-channel
+  state model, the deterministic super-step executor, persistence and replay, and the
+  conventions the code follows
+- **[Examples walkthrough](docs/examples.md)** — what each demo shows, what to look at
+  in the code, and how to point it at a live provider
+- **[PLAN.md](PLAN.md)** — the full design document: scope, build order, and
+  acceptance criteria for every phase
 
 ## Quick start
 
@@ -86,7 +95,8 @@ ctest --preset linux
 
 Every example runs fully offline against the mock backend by default — no API key
 needed. Binaries land in `build/windows-msvc/examples/Debug/` (Windows) or
-`build/linux/examples/` (Linux).
+`build/linux/examples/` (Linux). Each one is walked through in detail in
+[docs/examples.md](docs/examples.md).
 
 | Example | What it shows |
 |---|---|
@@ -139,24 +149,6 @@ automatically and never overrides variables already set in the environment.
 | `OPENAI_API_KEY` | key | required for `AF_BACKEND=openai` |
 
 Secrets are redacted from logs and error messages.
-
-## Repository layout
-
-```
-include/agents_framework/   public headers (the API surface)
-  core/    Result<T>, logging, config, ids, RNG, thread pool
-  http/    libcurl transport seam, SSE parsing, secret redaction
-  llm/     canonical chat types, Anthropic / OpenAI-compatible / mock backends, embeddings
-  graph/   typed channels, graph builder, BSP executor, checkpoints, events,
-           LLM / tool / retrieval / subgraph node types
-  tools/   native, process, and HTTP tools; JSON-schema registry; text-protocol fallback
-  store/   SQLite wrapper, checkpoint store, vector store
-  trace/   trace capture, trace store, dataset builder, training-data channel
-  eval/    TaskSuite seam, verifiers, eval harness with CIs, text-to-SQL reference suite
-src/       implementation, mirroring include/
-examples/  the four runnable demos
-tests/     Catch2 suite — deterministic and offline by default
-```
 
 ## Testing
 
