@@ -2,6 +2,8 @@
 
 #include <functional>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <variant>
 
 #include "agents_framework/core/result.hpp"
@@ -42,4 +44,12 @@ using StreamEvent = std::variant<MessageStart, TextDelta, ToolUseStart, ToolUseI
 
 using StreamCallback = std::function<void(const StreamEvent&)>;
 
-}  
+// adapts a text-only callback into a StreamCallback: fires once per TextDelta,
+// ignores every other event kind
+[[nodiscard]] inline StreamCallback on_text(std::function<void(std::string_view)> fn) {
+  return [fn = std::move(fn)](const StreamEvent& event) {
+    if (const auto* delta = std::get_if<TextDelta>(&event)) fn(delta->text);
+  };
+}
+
+}
