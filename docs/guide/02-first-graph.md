@@ -18,6 +18,10 @@ Without a reducer, the last write wins. Because names are template parameters,
 `state.get<"messages">()` is fully typed and checked at compile time; there is no
 string lookup at run time.
 
+This messages-plus-`Append` schema is so common the library ships it prebuilt as
+`ChatSchema`, with a `chat_state("question")` helper to seed it. The guide declares
+it by hand once so you can see what it is; after that, use the prebuilt one.
+
 ## 2. Write a node
 
 A node reads the state through a `StateView` and returns an `Update`. It never

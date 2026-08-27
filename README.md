@@ -121,27 +121,24 @@ environment) as described below.
 
 ## A taste of the API
 
-The whole ReAct loop from `react_demo`, minus the printing:
+The whole ReAct agent from `react_demo`. Prebuilt patterns are one call, and the
+`Executor` runs them like any other graph:
 
 ```cpp
-using Messages    = Channel<"messages", std::vector<Message>, Append>;
-using AgentSchema = Schema<Messages>;
+auto graph = make_react_agent(backend, registry,
+                              {.system = "Use the calculator tool for arithmetic."});
 
-GraphBuilder<AgentSchema> builder;
-builder.add_node("agent", make_llm_node<AgentSchema>(backend, options))
-    .add_node("tools", make_tool_node<AgentSchema>(registry))
-    .set_entry("agent")
-    .add_conditional_edge("agent", tools_router<AgentSchema>("tools"),
-                          {"tools", std::string{kEnd}})
-    .add_edge("tools", "agent");
-auto graph = std::move(builder).compile();
-
-State<AgentSchema> state;
-state.set<"messages">({Message::user_text("What is 987654321 times 123456789?")});
+auto state = chat_state("What is 987654321 times 123456789?");
 
 Executor executor;
-auto stats = executor.run(*graph, state, RunOptions{.max_steps = 10});
+auto stats = executor.run(*graph, state, {.max_steps = 10});
+
+std::cout << last_assistant_text(state.get<"messages">()) << "\n";
 ```
+
+Under the hood that is an ordinary typed graph: two nodes, a conditional edge, and
+an appending messages channel. Custom agents use the same `GraphBuilder` the
+prebuilt uses; the [guide](docs/guide/README.md) builds this exact loop by hand.
 
 Recoverable failures return `Result<T>` (`std::expected<T, Error>`) throughout;
 exceptions are reserved for broken invariants.

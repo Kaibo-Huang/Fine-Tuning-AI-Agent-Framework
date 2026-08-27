@@ -51,9 +51,11 @@ run. The whole conversation accumulates on one appending `messages` channel, and
 Things to look at in the code:
 
 - `make_calculator_registry`: a JSON-schema tool definition paired with a C++
-  callback, registered once and shared by the LLM node (which advertises it) and the
-  tool node (which executes it).
-- The graph wiring in `run_agent`: the entire ReAct pattern is five builder calls.
+  callback; the prebuilt graph advertises it to the model and executes what the
+  model calls.
+- `run_agent`: the entire agent is one `make_react_agent` call plus `chat_state`.
+  The manual wiring it performs inside is built by hand in
+  [guide step 3](guide/03-tools.md).
 
 ## orchestration_demo: supervisor, sub-agents, checkpoints, human-in-the-loop
 

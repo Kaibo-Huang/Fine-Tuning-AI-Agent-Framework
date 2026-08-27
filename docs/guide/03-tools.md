@@ -82,9 +82,30 @@ const auto stats = executor.run(*graph, state, RunOptions{.max_steps = 10});
 Afterwards the `messages` channel contains the full trajectory (the tool call, the
 tool result, and the final answer) because every node appended to it.
 
+## 5. The shortcut
+
+This wiring is the standard pattern, so the library ships it prebuilt. Everything
+above collapses to:
+
+```cpp
+auto graph = make_react_agent(backend, registry, {.system = "Use the calculator."});
+auto state = chat_state("What is 987654321 times 123456789?");
+
+Executor executor;
+auto stats = executor.run(*graph, state, {.max_steps = 10});
+
+std::cout << last_assistant_text(state.get<"messages">()) << "\n";
+```
+
+`make_react_agent` builds exactly the graph from this step over the library's
+`ChatSchema`, advertises the registry's tools to the model automatically, and
+returns the same `CompiledGraph` a hand-built one produces. Start from the
+prebuilt; reach for the manual wiring when the loop needs extra nodes or channels.
+
 ## Complete example
 
-[`examples/react_demo.cpp`](../../examples/react_demo.cpp) is this step verbatim,
-plus transcript printing and the scripted mock trajectory.
+[`examples/react_demo.cpp`](../../examples/react_demo.cpp) runs the shortcut form,
+plus transcript printing and the scripted mock trajectory. The manual wiring above
+is what `make_react_agent` does inside.
 
 **Next:** [Step 4: Stream events from a run](04-streaming-and-events.md)
