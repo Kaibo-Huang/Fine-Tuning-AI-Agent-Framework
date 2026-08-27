@@ -55,7 +55,7 @@ hot-swaps or rolls back the result.
   version, and commit that produced it. Verified teacher traces export directly as
   JSONL training data for a student model.
 
-## Roadmap
+## Incoming Features
 
 The orchestration engine and the measurement stack are complete. What's to come, in
 order:
