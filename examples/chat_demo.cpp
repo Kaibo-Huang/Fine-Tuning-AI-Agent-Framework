@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <variant>
 
 #include <nlohmann/json.hpp>
@@ -45,11 +46,8 @@ void stream_a_reply(LLMBackend& backend) {
   request.sampling.max_tokens = 64;
 
   std::cout << "[stream] ";
-  const auto reply = backend.generate_stream(request, [](const StreamEvent& event) {
-    if (const auto* delta = std::get_if<TextDelta>(&event)) {
-      std::cout << delta->text << std::flush;
-    }
-  });
+  const auto reply = backend.generate_stream(
+      request, on_text([](std::string_view text) { std::cout << text << std::flush; }));
   std::cout << "\n";
   if (!reply) std::cout << "[stream] error: " << reply.error().to_string() << "\n";
 }
@@ -148,16 +146,17 @@ int main() {
     std::cerr << "[backend] " << selection.error().to_string() << "\n";
     return 1;
   }
-  const auto backend = make_backend(*selection, options, system_env());
-  if (!backend) {
-    std::cerr << "[backend] " << backend.error().to_string() << "\n";
+  const auto opened = make_backend(*selection, options, system_env());
+  if (!opened) {
+    std::cerr << "[backend] " << opened.error().to_string() << "\n";
     return 1;
   }
+  LLMBackend& backend = **opened;
 
   std::cout << "=== chat demo — " << selection->describe() << " ===\n";
-  ask_a_question(**backend);
-  stream_a_reply(**backend);
-  call_a_tool(**backend);
+  ask_a_question(backend);
+  stream_a_reply(backend);
+  call_a_tool(backend);
 
   if (!selection->live) {
     std::cout << "\nOffline mock run. Set AF_BACKEND=openai (or anthropic) in .env for a "

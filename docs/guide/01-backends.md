@@ -23,8 +23,9 @@ Then, in code, load the environment and construct whatever it names:
 BackendOptions options;
 options.max_tokens = 256;
 
-auto backend = backend_from_env(std::move(options));
-if (!backend) { /* backend.error() explains what's missing */ }
+auto opened = backend_from_env(std::move(options));
+if (!opened) { /* opened.error() explains what's missing */ }
+auto backend = *opened;  // unwrap the Result once; backend is a shared_ptr<LLMBackend>
 ```
 
 With no configuration at all you get the mock backend, which is deterministic and
@@ -37,7 +38,7 @@ ChatRequest request;
 request.messages = {Message::user_text("In one sentence, what is a directed graph?")};
 request.sampling.max_tokens = 128;
 
-const auto reply = (*backend)->generate(request);
+const auto reply = backend->generate(request);
 if (reply) std::cout << reply->text() << "\n";
 ```
 
@@ -46,15 +47,17 @@ as `Result<T>` (`std::expected<T, Error>`), never as exceptions.
 
 ## 3. Stream the reply
 
-The same request, delivered token by token through a callback:
+The same request, delivered token by token. For the common case — you just want the
+text — wrap a plain callback in `on_text`:
 
 ```cpp
-const auto reply = (*backend)->generate_stream(request, [](const StreamEvent& event) {
-  if (const auto* delta = std::get_if<TextDelta>(&event)) {
-    std::cout << delta->text << std::flush;
-  }
-});
+const auto reply = backend->generate_stream(
+    request, on_text([](std::string_view text) { std::cout << text << std::flush; }));
 ```
+
+When you need more than text, pass a full `StreamCallback` instead: it receives every
+`StreamEvent` — tool-call deltas, the stop reason and token usage, stream errors — as
+a variant you match on.
 
 ## 4. Make the mock speak
 

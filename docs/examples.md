@@ -20,8 +20,8 @@ same code:
 
 1. **A single-turn question** — build a `ChatRequest`, call `generate`, print the
    reply.
-2. **Streaming** — the same call through `generate_stream`, printing each `TextDelta`
-   as it arrives.
+2. **Streaming** — the same call through `generate_stream`, printing tokens as they
+   arrive with the `on_text` convenience wrapper.
 3. **A tool round-trip** — the model is given a `get_weather` tool definition and asks
    to call it; the demo runs the "tool", appends a `ToolResultBlock` to the
    conversation, and the model folds the result into its final answer.
