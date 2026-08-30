@@ -2,6 +2,8 @@ find_package(Catch2 3 CONFIG REQUIRED)
 
 add_executable(agents_framework_tests
   test_version.cpp
+  test_umbrella.cpp
+  test_prelude.cpp
   core/test_result.cpp
   core/test_logging.cpp
   core/test_config.cpp
