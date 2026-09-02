@@ -14,14 +14,8 @@
 #include <string_view>
 #include <variant>
 
-#include <nlohmann/json.hpp>
+#include "agents_framework/prelude.hpp"
 
-#include "agents_framework/core/dotenv.hpp"
-#include "agents_framework/llm/backend_factory.hpp"
-
-using namespace agents_framework::core;
-using namespace agents_framework::llm;
-using json = nlohmann::json;
 using std::string;
 using std::string_view;
 

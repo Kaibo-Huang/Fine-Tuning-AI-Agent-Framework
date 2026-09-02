@@ -16,19 +16,8 @@
 #include <variant>
 #include <vector>
 
-#include <nlohmann/json.hpp>
+#include "agents_framework/prelude.hpp"
 
-#include "agents_framework/core/dotenv.hpp"
-#include "agents_framework/graph/executor.hpp"
-#include "agents_framework/graph/prebuilt.hpp"
-#include "agents_framework/llm/backend_factory.hpp"
-#include "agents_framework/tools/registry.hpp"
-
-using namespace agents_framework::core;
-using namespace agents_framework::graph;
-using namespace agents_framework::llm;
-using namespace agents_framework::tools;
-using json = nlohmann::json;
 using std::string;
 using std::vector;
 

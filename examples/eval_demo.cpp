@@ -14,21 +14,8 @@
 #include <string>
 #include <utility>
 
-#include "agents_framework/core/dotenv.hpp"
-#include "agents_framework/eval/eval_store.hpp"
-#include "agents_framework/eval/harness.hpp"
-#include "agents_framework/eval/text_to_sql.hpp"
-#include "agents_framework/llm/backend_factory.hpp"
-#include "agents_framework/llm/message.hpp"
-#include "agents_framework/store/db.hpp"
-#include "agents_framework/trace/dataset.hpp"
-#include "agents_framework/trace/trace_store.hpp"
+#include "agents_framework/prelude.hpp"
 
-using namespace agents_framework::core;
-using namespace agents_framework::eval;
-using namespace agents_framework::llm;
-using namespace agents_framework::store;
-using namespace agents_framework::trace;
 using std::string;
 
 namespace {

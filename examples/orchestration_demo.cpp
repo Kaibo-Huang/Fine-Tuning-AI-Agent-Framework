@@ -20,23 +20,8 @@
 #include <variant>
 #include <vector>
 
-#include "agents_framework/core/dotenv.hpp"
-#include "agents_framework/graph/events.hpp"
-#include "agents_framework/graph/executor.hpp"
-#include "agents_framework/graph/prebuilt.hpp"
-#include "agents_framework/graph/retrieval_node.hpp"
-#include "agents_framework/graph/subgraph_node.hpp"
-#include "agents_framework/llm/backend_factory.hpp"
-#include "agents_framework/llm/mock_backend.hpp"
-#include "agents_framework/llm/mock_embedding.hpp"
-#include "agents_framework/store/checkpoint_store.hpp"
-#include "agents_framework/store/db.hpp"
-#include "agents_framework/store/vector_store.hpp"
+#include "agents_framework/prelude.hpp"
 
-using namespace agents_framework::core;
-using namespace agents_framework::graph;
-using namespace agents_framework::llm;
-using namespace agents_framework::store;
 using std::pair;
 using std::string;
 using std::vector;
