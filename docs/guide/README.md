@@ -8,15 +8,18 @@ Build the project first (see the [README](../../README.md#quick-start)). Every
 snippet runs offline against the mock backend, no API key needed, and the code is
 identical for a live provider.
 
-To keep the snippets readable, they assume the same using-directives the examples use:
+Every example starts from one include, and the snippets assume the same:
 
 ```cpp
-using namespace agents_framework::core;   // Result<T>, load_dotenv, ...
-using namespace agents_framework::llm;    // Message, ChatRequest, backends, ...
-using namespace agents_framework::graph;  // Channel, GraphBuilder, Executor, ...
-using namespace agents_framework::tools;  // ToolDef, ToolRegistry, ...
-using namespace agents_framework::store;  // Db, CheckpointStore, VectorStore, ...
+#include "agents_framework/prelude.hpp"
 ```
+
+The prelude pulls in the whole library and opens every module namespace, so
+`Executor`, `Message`, and `ToolRegistry` need no qualifier. It belongs in `.cpp`
+files only: a using-directive in a header leaks into every file that includes it.
+Library code, and any file that wants control over what is visible, includes the
+module headers directly, or `agents_framework/agents_framework.hpp` for everything
+without the using-directives.
 
 ## The steps
 
