@@ -23,7 +23,10 @@ Tracks 1 and 2 are complete; track 3 is the current focus.
 ## Modules
 
 Public headers live under `include/agents_framework/`, one directory per module, with
-implementations mirrored under `src/`.
+implementations mirrored under `src/`. Two convenience headers sit at the root of that
+tree: `agents_framework.hpp` includes every public header and opens no namespace, and
+`prelude.hpp` includes it and opens every module namespace, for application `.cpp`
+files only.
 
 | Module | What it provides |
 |---|---|

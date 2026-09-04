@@ -9,6 +9,10 @@ live provider through the environment alone (see the
 Binaries land in `build/windows-msvc/examples/Debug/` (Windows) or
 `build/linux/examples/` (Linux).
 
+Each demo begins with a single include, `agents_framework/prelude.hpp`, which brings
+in the whole library and opens its namespaces. Everything after that line is the demo
+itself.
+
 ## chat_demo: the backend abstraction
 
 Three scenes against one `LLMBackend`, showing that offline and live runs share the
