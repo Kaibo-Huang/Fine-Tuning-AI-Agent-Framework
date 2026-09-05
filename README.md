@@ -112,6 +112,10 @@ auto stats = executor.run(*graph, state, {.max_steps = 10});
 std::cout << last_assistant_text(state.get<"messages">()) << "\n";
 ```
 
+Every demo starts with one include, `agents_framework/prelude.hpp`, which pulls in
+the whole library and opens its namespaces. Library code includes the module headers
+it needs instead.
+
 Under the hood that is an ordinary typed graph: two nodes, a conditional edge, an
 appending messages channel. Custom agents use the same `GraphBuilder` the prebuilt
 uses; the [guide](docs/guide/README.md) builds this exact loop by hand.
